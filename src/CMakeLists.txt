@@ -1,2 +1,2 @@
-idf_component_register(SRCS "ledrock-fw.c"
+idf_component_register(SRCS "ledrock.cpp"
                     INCLUDE_DIRS "")

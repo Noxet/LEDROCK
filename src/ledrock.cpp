@@ -9,6 +9,11 @@
 #define LEDC_IO_GREEN 17
 #define LEDC_IO_BLUE 18
 
+extern "C"
+{
+    void app_main();
+}
+
 typedef enum
 {
     RED,
@@ -89,6 +94,7 @@ void app_main(void)
     {
         if (test) {
             printf("INTERRUPT TRIGGED!\n");
+            test = 0;
         }
         /*
         printf("Setting red duty = 256\n");
