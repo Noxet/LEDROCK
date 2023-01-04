@@ -1,8 +1,9 @@
 # ESP32 specific
 build/
 
-# VS Code
+# VS
 .vscode/
+.vs/
 
 # Prerequisites
 *.d
