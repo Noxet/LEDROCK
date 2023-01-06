@@ -54,17 +54,19 @@ void app_main(void)
             .gpio_num = LEDC_IO_RED,
             .speed_mode = LEDC_LOW_SPEED_MODE,
             .channel = LEDC_CHANNEL_0,
+            .intr_type = LEDC_INTR_FADE_END,
             .timer_sel = LEDC_TIMER_0,
             .duty = 0,
-            .intr_type = LEDC_INTR_FADE_END
+            
         },
         {
             .gpio_num = LEDC_IO_GREEN,
             .speed_mode = LEDC_LOW_SPEED_MODE,
             .channel = LEDC_CHANNEL_1,
+            .intr_type = LEDC_INTR_FADE_END,
             .timer_sel = LEDC_TIMER_0,
             .duty = 0,
-            .intr_type = LEDC_INTR_FADE_END
+            
         },
         {
             .gpio_num = LEDC_IO_BLUE,
