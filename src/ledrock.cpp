@@ -2,6 +2,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/ledc.h"
+#include "driver/gpio.h"
 #include "esp_err.h"
 
 #define LEDC_CLK_FREQ 5000
@@ -34,6 +35,12 @@ void set_led(ledc_channel_config_t *led_conf, int duty)
 void IRAM_ATTR led_isr_handler(void *arg)
 {
     test = 1;
+}
+
+
+void IRAM_ATTR gpio_isr_handler(void *arg)
+{
+    printf("GOT INPUT INTERRUPT!");
 }
 
 void app_main(void)
@@ -86,11 +93,26 @@ void app_main(void)
      * Enable HW fade and register interrupt.
      * Note that ledc_fade_func_install must come first, and also the SHARED flag needs to be set (docs sucks)
      */
-    ESP_ERROR_CHECK(ledc_fade_func_install(ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_SHARED));
-    ESP_ERROR_CHECK(ledc_isr_register(led_isr_handler, NULL, ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_SHARED, NULL));
+    //ESP_ERROR_CHECK(ledc_fade_func_install(ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_SHARED));
+    //ESP_ERROR_CHECK(ledc_isr_register(led_isr_handler, NULL, ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_SHARED, NULL));
 
-    ledc_set_fade_with_time(led_conf[RED].speed_mode, led_conf[RED].channel, 1023, 5000);
-    ledc_fade_start(led_conf[RED].speed_mode, led_conf[RED].channel, LEDC_FADE_NO_WAIT);
+    //ledc_set_fade_with_time(led_conf[RED].speed_mode, led_conf[RED].channel, 1023, 5000);
+    //ledc_fade_start(led_conf[RED].speed_mode, led_conf[RED].channel, LEDC_FADE_NO_WAIT);
+
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 1023);
+
+    gpio_config_t btnConfig =
+    {
+        .pin_bit_mask = 1ULL << GPIO_NUM_19,
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .pull_down_en = GPIO_PULLDOWN_ENABLE,
+        .intr_type = GPIO_INTR_POSEDGE
+    };
+
+    gpio_config(&btnConfig);
+    gpio_install_isr_service(0);
+    gpio_isr_handler_add(GPIO_NUM_19, gpio_isr_handler, NULL);
 
     while (1)
     {
