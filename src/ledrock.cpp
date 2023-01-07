@@ -36,28 +36,6 @@ extern "C"
     void IRAM_ATTR gpio_isr_handler(void *arg);
 }
 
-typedef enum
-{
-    RED,
-    GREEN,
-    BLUE
-} ledcolor;
-
-
-volatile static int test = 0;
-
-
-void set_led(ledc_channel_config_t *led_conf, int duty)
-{
-    ledc_set_duty(led_conf->speed_mode, led_conf->channel, duty);
-    ledc_update_duty(led_conf->speed_mode, led_conf->channel);
-}
-
-void IRAM_ATTR led_isr_handler(void *arg)
-{
-    test = 1;
-}
-
 
 void IRAM_ATTR gpio_isr_handler(void *arg)
 {
@@ -123,11 +101,6 @@ void app_main(void)
 
     while (1)
     {
-        if (test) {
-            printf("INTERRUPT TRIGGED!\n");
-            test = 0;
-        }
-
         while (eventHandler.empty())
         {
             vTaskDelay(1000 / portTICK_PERIOD_MS);
@@ -139,22 +112,5 @@ void app_main(void)
         taskDISABLE_INTERRUPTS();
         eventHandler.pop_front();
         taskENABLE_INTERRUPTS();
-        /*
-        printf("Setting red duty = 256\n");
-        set_led(&led_conf[RED], 256);
-        set_led(&led_conf[GREEN], 0);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-
-        printf("Setting green duty = 512\n");
-        set_led(&led_conf[RED], 0);
-        set_led(&led_conf[GREEN], 512);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-
-        printf("Setting g/r duty = 256\n");
-        set_led(&led_conf[RED], 256);
-        set_led(&led_conf[GREEN], 256);
-        */
-        //vTaskDelay(1000 / portTICK_PERIOD_MS);
-        
     }
 }
