@@ -17,7 +17,7 @@
 
 #define BTN GPIO_NUM_18
 
-void handleBtnEvent(Event &ev);
+void handleBtnEvent(Event *ev);
 
 typedef std::list<std::function<void()>> EventHandler;
 EventHandler eventHandler;
@@ -60,21 +60,25 @@ void IRAM_ATTR gpio_isr_handler(void *arg)
     * after this call. We also need to make the capture list mutable, due to the downcasting
     * in subsequent function calls.
     */
-    eventHandler.push_back([ev]() mutable { handleBtnEvent(ev); });
+    eventHandler.push_back([ev]() mutable { handleBtnEvent(&ev); });
 }
 
 
-void handleBtnEvent(Event &ev)
+void handleBtnEvent(Event *event)
 {
     static int count = 0;
 
-    auto &e = static_cast<ButtonPressedEvent &>(ev);
-    printf("[handleBtnEvent] - %d - Count = %d\n", e.getTest(), count);
+    //auto e = static_cast<ButtonPressedEvent *>(ev);
+    if (auto ev = event_cast<ButtonPressedEvent>(event))
+    {
+        printf("[handleBtnEvent] - %d - Count = %d\n", ev->getTest(), count);
 
-    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 50 * count);
-    ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
-    ++count;
-    if (50 * count > 1000) count = 0;
+        ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 50 * count);
+        ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+        ++count;
+        if (50 * count > 1000) count = 0;
+    }
+    
 }
 
 void app_main(void)

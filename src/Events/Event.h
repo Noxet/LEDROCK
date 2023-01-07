@@ -19,3 +19,15 @@ public:
 	virtual EventType getEventType() const = 0;
 	virtual const char *getName() const = 0;
 };
+
+
+template <typename T>
+T *event_cast(Event *ev)
+{
+	if (ev->getEventType() == T::getStaticEventType())
+	{
+		return static_cast<T *>(ev);
+	}
+
+	return nullptr;
+}
