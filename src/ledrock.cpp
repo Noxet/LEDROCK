@@ -7,8 +7,12 @@
 
 #include <list>
 #include <functional>
+#include <memory>
 
 #include "Events\ButtonEvent.h"
+#include "ColorManager.h"
+#include "ColorMode.h"
+#include "ColorUtils.h"
 
 #define LEDC_CLK_FREQ 5000
 #define LEDC_IO_RED 16
@@ -21,6 +25,9 @@ void handleBtnEvent(Event *ev);
 
 typedef std::list<std::function<void()>> EventHandler;
 EventHandler eventHandler;
+
+
+ColorManager g_colorManager;
 
 
 extern "C"
@@ -68,64 +75,18 @@ void handleBtnEvent(Event *event)
 {
     static int count = 0;
 
-    //auto e = static_cast<ButtonPressedEvent *>(ev);
     if (auto ev = event_cast<ButtonPressedEvent>(event))
     {
-        printf("[handleBtnEvent] - %d - Count = %d\n", ev->getTest(), count);
+        printf("[handleBtnEvent] - %d - Count = %d\n", ev->getTest(), ++count);
 
-        ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 50 * count);
-        ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
-        ++count;
-        if (50 * count > 1000) count = 0;
+        g_colorManager.nextColorMode();
     }
     
 }
 
 void app_main(void)
 {
-    // Set up PWM timer
-    ledc_timer_config_t timer_conf = {
-        .speed_mode = LEDC_LOW_SPEED_MODE,
-        .duty_resolution = LEDC_TIMER_10_BIT,
-        .timer_num = LEDC_TIMER_0,
-        .freq_hz = LEDC_CLK_FREQ,
-        .clk_cfg = LEDC_AUTO_CLK
-    };
-    ledc_timer_config(&timer_conf);
 
-    // Set up LED channels
-    ledc_channel_config_t led_conf[3] = {
-        {
-            .gpio_num = LEDC_IO_RED,
-            .speed_mode = LEDC_LOW_SPEED_MODE,
-            .channel = LEDC_CHANNEL_0,
-            .intr_type = LEDC_INTR_FADE_END,
-            .timer_sel = LEDC_TIMER_0,
-            .duty = 0,
-            
-        },
-        {
-            .gpio_num = LEDC_IO_GREEN,
-            .speed_mode = LEDC_LOW_SPEED_MODE,
-            .channel = LEDC_CHANNEL_1,
-            .intr_type = LEDC_INTR_FADE_END,
-            .timer_sel = LEDC_TIMER_0,
-            .duty = 0,
-            
-        },
-        {
-            .gpio_num = LEDC_IO_BLUE,
-            .speed_mode = LEDC_LOW_SPEED_MODE,
-            .channel = LEDC_CHANNEL_2,
-            .timer_sel = LEDC_TIMER_0,
-            .duty = 0
-        }
-    };
-
-    for (int i = 0; i < 3; i++)
-    {
-        ledc_channel_config(&led_conf[i]);
-    }
 
     /**
      * Enable HW fade and register interrupt.
@@ -151,6 +112,14 @@ void app_main(void)
     gpio_config(&btnConfig);
     gpio_install_isr_service(0);
     gpio_isr_handler_add(BTN, gpio_isr_handler, NULL);
+
+
+    auto red = std::unique_ptr<ColorMode>(new StaticColor(RGB(1000, 0, 0)));
+    auto yellow = std::unique_ptr<ColorMode>(new StaticColor(RGB(1000, 600, 0)));
+    auto green = std::unique_ptr<ColorMode>(new StaticColor(RGB(0, 1000, 0)));
+
+    g_colorManager.addColorMode(move(red)).addColorMode(move(yellow)).addColorMode(move(green));
+
 
     while (1)
     {
