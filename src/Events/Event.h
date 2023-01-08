@@ -2,7 +2,8 @@
 
 enum class EventType
 {
-	buttonPressed
+	buttonPressed,
+	timerAlarm,
 };
 
 
