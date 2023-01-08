@@ -13,8 +13,8 @@
 #include "Events/ButtonEvent.h"
 #include "Events/TimerEvent.h"
 #include "ColorManager.h"
-#include "ColorMode.h"
-#include "ColorUtils.h"
+#include "Colors/ColorMode.h"
+#include "Colors/ColorUtils.h"
 
 
 #define TIMER_INTERVAL 1500
@@ -66,7 +66,7 @@ void handleBtnEvent(Event *event)
     {
         printf("[handleBtnEvent] - %d - Count = %d\n", ev->getTest(), ++count);
 
-        g_colorManager.nextColorMode();
+        //g_colorManager.nextColorMode();
     }
 }
 

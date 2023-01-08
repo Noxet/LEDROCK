@@ -1,13 +1,21 @@
 #pragma once
 
 #include "Hardware/LED.h"
+#include "Events/Event.h"
 
 class ColorMode
 {
 public:
 	virtual ~ColorMode() = default;
 
-	void run();
+	void run()
+	{
+		setupImpl();
+		runImpl();
+		cleanupImpl();
+	}
+
+	virtual void onEvent(Event *event) {}
 
 private:
 	virtual void setupImpl() {}

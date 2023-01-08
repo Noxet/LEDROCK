@@ -3,7 +3,7 @@
 #include "driver/ledc.h"
 #include "driver/gpio.h"
 
-#include "ColorUtils.h"
+#include "Colors/ColorUtils.h"
 
 constexpr int g_gpioR = 16;
 constexpr int g_gpioG = 17;
