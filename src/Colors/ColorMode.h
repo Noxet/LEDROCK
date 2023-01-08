@@ -3,6 +3,8 @@
 #include "Hardware/LED.h"
 #include "Events/Event.h"
 
+#include <vector>
+
 class ColorMode
 {
 public:
@@ -16,6 +18,9 @@ public:
 	}
 
 	virtual void onEvent(Event *event) {}
+
+protected:
+	LED m_led;
 
 private:
 	virtual void setupImpl() {}
@@ -34,5 +39,22 @@ private:
 	virtual void runImpl() override;
 
 	RGB m_rgb;
-	LED m_led;
+};
+
+
+class SwitchingColor : public ColorMode
+{
+public:
+	explicit SwitchingColor(std::vector<RGB> &colors);
+
+	virtual void onEvent(Event *event) override;
+
+private:
+	virtual void setupImpl() override;
+	virtual void runImpl() override;
+
+	void next();
+
+	int m_currentColor;
+	std::vector<RGB> m_colors;
 };

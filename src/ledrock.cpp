@@ -17,18 +17,11 @@
 #include "Colors/ColorUtils.h"
 
 
-#define TIMER_INTERVAL 1500
-
+constexpr int TIMER_INTERVAL = 1500;
 constexpr unsigned long long TIMER_DIVIDER = 16;
 constexpr unsigned long long TIMER_SCALE = TIMER_BASE_CLK / TIMER_DIVIDER / 1000;
 
 #define BTN GPIO_NUM_18
-
-/*
- * ISR handlers
- */
-void handleBtnEvent(Event *ev);
-void handleTimerEvent(Event *event);
 
 
 typedef std::list<std::function<void()>> EventHandler;
@@ -54,39 +47,15 @@ void IRAM_ATTR gpio_isr_handler(void *arg)
     * after this call. We also need to make the capture list mutable, due to the downcasting
     * in subsequent function calls.
     */
-    eventHandler.push_back([ev]() mutable { handleBtnEvent(&ev); });
-}
-
-
-void handleBtnEvent(Event *event)
-{
-    static int count = 0;
-
-    if (auto ev = event_cast<ButtonPressedEvent>(event))
-    {
-        printf("[handleBtnEvent] - %d - Count = %d\n", ev->getTest(), ++count);
-
-        //g_colorManager.nextColorMode();
-    }
+    eventHandler.push_back([ev]() mutable { g_colorManager.onEvent(&ev); });
 }
 
 
 bool IRAM_ATTR timer_isr_handler(void *arg)
 {
     TimerAlarmEvent ev(1);
-    eventHandler.push_back([ev]() mutable { handleTimerEvent(&ev); });
+    eventHandler.push_back([ev]() mutable { g_colorManager.onEvent(&ev); });
     return false;
-}
-
-
-void handleTimerEvent(Event *event)
-{
-    if (auto ev = event_cast<TimerAlarmEvent>(event))
-    {
-        printf("[handleTimerEvent] - Timer ID: %d\n", ev->getTimerId());
-        timer_set_counter_value(TIMER_GROUP_0, TIMER_0, 0);
-        timer_set_alarm(TIMER_GROUP_0, TIMER_0, TIMER_ALARM_EN);
-    }
 }
 
 
@@ -124,12 +93,18 @@ void app_main(void)
     auto yellow = std::unique_ptr<ColorMode>(new StaticColor(RGB(1000, 600, 0)));
     auto green = std::unique_ptr<ColorMode>(new StaticColor(RGB(0, 1000, 0)));
 
-    g_colorManager.addColorMode(move(red)).addColorMode(move(yellow)).addColorMode(move(green));
+    auto switchColors = std::vector<RGB>{ RGB(1000, 1000, 0), RGB(0, 1000, 1000), RGB(1000, 0, 1000) };
+    auto switchColor = std::unique_ptr<ColorMode>(new SwitchingColor(switchColors));
+
+    g_colorManager.addColorMode(move(red))
+        .addColorMode(move(yellow))
+        .addColorMode(move(green))
+        .addColorMode(move(switchColor));
 
 
     timer_config_t config;
     config.alarm_en = TIMER_ALARM_EN;
-    config.auto_reload = TIMER_AUTORELOAD_DIS;
+    config.auto_reload = TIMER_AUTORELOAD_EN;
     config.counter_dir = TIMER_COUNT_UP;
     config.divider = 16; // clock divider, recommend using a value between 100 and 1000
     config.intr_type = TIMER_INTR_LEVEL;
