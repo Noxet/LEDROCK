@@ -8,6 +8,11 @@ ColorManager& ColorManager::addColorMode(std::unique_ptr<ColorMode> cm)
 	return *this;
 }
 
+void ColorManager::start()
+{
+	m_colorModes.at(m_currentColorMode)->run();
+}
+
 void ColorManager::onEvent(Event *event)
 {
 	printf("[ColorManager] - %s\n", event->getName());

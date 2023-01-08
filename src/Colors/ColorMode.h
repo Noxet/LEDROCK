@@ -1,7 +1,9 @@
 #pragma once
 
-#include "Hardware/LED.h"
 #include "Events/Event.h"
+
+#include "Hardware/LED.h"
+#include "Hardware/Timer.h"
 
 #include <vector>
 
@@ -45,7 +47,7 @@ private:
 class SwitchingColor : public ColorMode
 {
 public:
-	explicit SwitchingColor(std::vector<RGB> &colors);
+	explicit SwitchingColor(std::vector<RGB> &colors, Timer &timer);
 
 	virtual void onEvent(Event *event) override;
 
@@ -57,4 +59,5 @@ private:
 
 	int m_currentColor;
 	std::vector<RGB> m_colors;
+	Timer m_timer;
 };

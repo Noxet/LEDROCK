@@ -11,6 +11,7 @@ class ColorManager
 public:
 	ColorManager& addColorMode(std::unique_ptr<ColorMode> cm);
 
+	void start();
 	void onEvent(Event *event);
 
 private:
