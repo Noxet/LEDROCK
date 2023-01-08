@@ -4,24 +4,32 @@
 #include "driver/ledc.h"
 #include "driver/gpio.h"
 #include "esp_err.h"
+#include "driver/timer.h"
 
 #include <list>
 #include <functional>
 #include <memory>
 
-#include "Events\ButtonEvent.h"
+#include "Events/ButtonEvent.h"
+#include "Events/TimerEvent.h"
 #include "ColorManager.h"
 #include "ColorMode.h"
 #include "ColorUtils.h"
 
-#define LEDC_CLK_FREQ 5000
-#define LEDC_IO_RED 16
-#define LEDC_IO_GREEN 17
-#define LEDC_IO_BLUE 5 // 18
+
+#define TIMER_INTERVAL 1500
+
+constexpr unsigned long long TIMER_DIVIDER = 16;
+constexpr unsigned long long TIMER_SCALE = TIMER_BASE_CLK / TIMER_DIVIDER / 1000;
 
 #define BTN GPIO_NUM_18
 
+/*
+ * ISR handlers
+ */
 void handleBtnEvent(Event *ev);
+void handleTimerEvent(Event *event);
+
 
 typedef std::list<std::function<void()>> EventHandler;
 EventHandler eventHandler;
@@ -59,8 +67,27 @@ void handleBtnEvent(Event *event)
 
         g_colorManager.nextColorMode();
     }
-    
 }
+
+
+bool timer_isr_handler(void *arg)
+{
+    TimerAlarmEvent ev(1);
+    eventHandler.push_back([ev]() mutable { handleTimerEvent(&ev); });
+    return false;
+}
+
+
+void handleTimerEvent(Event *event)
+{
+    if (auto ev = event_cast<TimerAlarmEvent>(event))
+    {
+        printf("[handleTimerEvent] - Timer ID: %d\n", ev->getTimerId());
+        timer_set_counter_value(TIMER_GROUP_0, TIMER_0, 0);
+        timer_set_alarm(TIMER_GROUP_0, TIMER_0, TIMER_ALARM_EN);
+    }
+}
+
 
 void app_main(void)
 {
@@ -99,11 +126,28 @@ void app_main(void)
     g_colorManager.addColorMode(move(red)).addColorMode(move(yellow)).addColorMode(move(green));
 
 
+    timer_config_t config;
+    config.alarm_en = TIMER_ALARM_EN;
+    config.auto_reload = TIMER_AUTORELOAD_DIS;
+    config.counter_dir = TIMER_COUNT_UP;
+    config.divider = 16; // clock divider, recommend using a value between 100 and 1000
+    config.intr_type = TIMER_INTR_LEVEL;
+    config.counter_en = TIMER_PAUSE;
+    timer_init(TIMER_GROUP_0, TIMER_0, &config);
+
+    timer_set_counter_value(TIMER_GROUP_0, TIMER_0, 0);
+    timer_set_alarm_value(TIMER_GROUP_0, TIMER_0, TIMER_INTERVAL * TIMER_SCALE); // convert interval to microseconds
+    
+    timer_enable_intr(TIMER_GROUP_0, TIMER_0);
+    timer_isr_callback_add(TIMER_GROUP_0, TIMER_0, timer_isr_handler, nullptr, 0);
+    timer_start(TIMER_GROUP_0, TIMER_0);
+
+
     while (1)
     {
         while (eventHandler.empty())
         {
-            vTaskDelay(1000 / portTICK_PERIOD_MS);
+            vTaskDelay(100 / portTICK_PERIOD_MS);
         }
 
         auto &f = eventHandler.front();
