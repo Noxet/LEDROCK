@@ -42,6 +42,7 @@ extern "C"
 {
     void app_main();
     void IRAM_ATTR gpio_isr_handler(void *arg);
+    bool IRAM_ATTR timer_isr_handler(void *arg);
 }
 
 
@@ -70,7 +71,7 @@ void handleBtnEvent(Event *event)
 }
 
 
-bool timer_isr_handler(void *arg)
+bool IRAM_ATTR timer_isr_handler(void *arg)
 {
     TimerAlarmEvent ev(1);
     eventHandler.push_back([ev]() mutable { handleTimerEvent(&ev); });
