@@ -4,7 +4,7 @@
 #include "driver/ledc.h"
 #include "driver/gpio.h"
 #include "esp_err.h"
-#include "driver/timer.h"
+
 
 #include <list>
 #include <functional>
@@ -17,9 +17,7 @@
 #include "Colors/ColorUtils.h"
 
 
-constexpr int TIMER_INTERVAL = 1500;
-constexpr unsigned long long TIMER_DIVIDER = 16;
-constexpr unsigned long long TIMER_SCALE = TIMER_BASE_CLK / TIMER_DIVIDER / 1000;
+
 
 #define BTN GPIO_NUM_18
 
@@ -93,31 +91,16 @@ void app_main(void)
     auto yellow = std::unique_ptr<ColorMode>(new StaticColor(RGB(1000, 600, 0)));
     auto green = std::unique_ptr<ColorMode>(new StaticColor(RGB(0, 1000, 0)));
 
+    Timer swTim(1500, timer_isr_handler, true);
     auto switchColors = std::vector<RGB>{ RGB(1000, 1000, 0), RGB(0, 1000, 1000), RGB(1000, 0, 1000) };
-    auto switchColor = std::unique_ptr<ColorMode>(new SwitchingColor(switchColors));
+    auto switchColor = std::unique_ptr<ColorMode>(new SwitchingColor(switchColors, swTim));
 
     g_colorManager.addColorMode(move(red))
         .addColorMode(move(yellow))
         .addColorMode(move(green))
         .addColorMode(move(switchColor));
-
-
-    timer_config_t config;
-    config.alarm_en = TIMER_ALARM_EN;
-    config.auto_reload = TIMER_AUTORELOAD_EN;
-    config.counter_dir = TIMER_COUNT_UP;
-    config.divider = 16; // clock divider, recommend using a value between 100 and 1000
-    config.intr_type = TIMER_INTR_LEVEL;
-    config.counter_en = TIMER_PAUSE;
-    timer_init(TIMER_GROUP_0, TIMER_0, &config);
-
-    timer_set_counter_value(TIMER_GROUP_0, TIMER_0, 0);
-    timer_set_alarm_value(TIMER_GROUP_0, TIMER_0, TIMER_INTERVAL * TIMER_SCALE); // convert interval to microseconds
     
-    timer_enable_intr(TIMER_GROUP_0, TIMER_0);
-    timer_isr_callback_add(TIMER_GROUP_0, TIMER_0, timer_isr_handler, nullptr, 0);
-    timer_start(TIMER_GROUP_0, TIMER_0);
-
+    g_colorManager.start();
 
     while (1)
     {

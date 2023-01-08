@@ -2,7 +2,7 @@
 #include "Events/TimerEvent.h"
 
 
-SwitchingColor::SwitchingColor(std::vector<RGB> &colors) : m_currentColor(0), m_colors(colors)
+SwitchingColor::SwitchingColor(std::vector<RGB> &colors, Timer &timer) : m_currentColor(0), m_colors(colors), m_timer(timer)
 {
 }
 
@@ -14,9 +14,7 @@ void SwitchingColor::onEvent(Event *event)
 	if (auto ev = event_cast<TimerAlarmEvent>(event))
 	{
 		printf("[SwitchingColor] - Change color\n");
-
-		m_currentColor = (m_currentColor + 1) % m_colors.size();
-		m_led.setRGB(m_colors.at(m_currentColor));
+		next();
 	}
 }
 
@@ -24,10 +22,19 @@ void SwitchingColor::onEvent(Event *event)
 void SwitchingColor::setupImpl()
 {
 	m_led.configure();
+	m_timer.init();
 }
 
 
 void SwitchingColor::runImpl()
 {
+	m_led.setRGB(m_colors.at(m_currentColor));
+	m_timer.start();
+}
+
+
+void SwitchingColor::next()
+{
+	m_currentColor = (m_currentColor + 1) % m_colors.size();
 	m_led.setRGB(m_colors.at(m_currentColor));
 }
