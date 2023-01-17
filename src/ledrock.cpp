@@ -39,6 +39,7 @@ extern "C"
 
 void IRAM_ATTR gpio_isr_handler(void *arg)
 {
+    // TODO: add debouncing mechanism, using a timer
     ButtonPressedEvent ev(1337);
     /*
     * Here, we have to take the event by copy, since the variable goes out of scope
