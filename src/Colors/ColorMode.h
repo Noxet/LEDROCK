@@ -71,6 +71,7 @@ public:
 private:
 	virtual void setupImpl() override;
 	virtual void runImpl() override;
+	virtual void cleanupImpl() override;
 
 	RGB m_rgb;
 	Timer m_timer;

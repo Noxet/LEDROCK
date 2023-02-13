@@ -79,7 +79,7 @@ void LED::configure()
 
 void LED::enableFade()
 {
-    ledc_fade_func_install(0);
+    ESP_ERROR_CHECK(ledc_fade_func_install(0));
 }
 
 
@@ -93,8 +93,10 @@ void LED::startFade(const RGB &rgb)
 {
     m_rgb = rgb;
 
-    ledc_set_fade_with_time(m_ledConf[0].speed_mode, m_ledConf[0].channel, m_rgb.r, 5000);
-    ledc_fade_start(m_ledConf[0].speed_mode, m_ledConf[0].channel, LEDC_FADE_NO_WAIT);
+    //ESP_ERROR_CHECK(ledc_set_fade_with_time(m_ledConf[0].speed_mode, m_ledConf[0].channel, m_rgb.r, 5000));
+    //ESP_ERROR_CHECK(ledc_fade_start(m_ledConf[0].speed_mode, m_ledConf[0].channel, LEDC_FADE_NO_WAIT));
+
+    ESP_ERROR_CHECK(ledc_set_fade_time_and_start(m_ledConf[0].speed_mode, m_ledConf[0].channel, m_rgb.r, 5000, LEDC_FADE_NO_WAIT));
 }
 
 

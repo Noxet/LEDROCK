@@ -15,6 +15,14 @@ void FadingColor::setupImpl()
 
 void FadingColor::runImpl()
 {
+	printf("[FadingColor] - Run\n");
+
+	m_led.setRGB(RGB{0, 0, 0});
 	m_led.startFade(m_rgb);
 	//m_timer.start();
+}
+
+void FadingColor::cleanupImpl()
+{
+	m_led.disableFade();
 }
