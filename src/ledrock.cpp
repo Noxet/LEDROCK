@@ -58,6 +58,12 @@ bool IRAM_ATTR timer_isr_handler(void *arg)
 }
 
 
+bool IRAM_ATTR led_fade_isr_handler(const ledc_cb_param_t *param, void *arg)
+{
+
+}
+
+
 void app_main(void)
 {
 

@@ -4,6 +4,7 @@ enum class EventType
 {
 	buttonPressed,
 	timerAlarm,
+	ledFadeComplete,
 };
 
 

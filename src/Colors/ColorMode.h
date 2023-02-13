@@ -66,13 +66,16 @@ private:
 class FadingColor : public ColorMode
 {
 public:
-	explicit FadingColor(const RGB &rgb, Timer &timer);
+	explicit FadingColor(const RGB &rgbFrom, const RGB &rgbTo, Timer &timer);
+
+	virtual void onEvent(Event *event) override;
 
 private:
 	virtual void setupImpl() override;
 	virtual void runImpl() override;
 	virtual void cleanupImpl() override;
 
-	RGB m_rgb;
+	RGB m_rgbFrom;
+	RGB m_rgbTo;
 	Timer m_timer;
 };
