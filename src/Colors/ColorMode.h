@@ -61,3 +61,17 @@ private:
 	std::vector<RGB> m_colors;
 	Timer m_timer;
 };
+
+
+class FadingColor : public ColorMode
+{
+public:
+	explicit FadingColor(const RGB &rgb, Timer &timer);
+
+private:
+	virtual void setupImpl() override;
+	virtual void runImpl() override;
+
+	RGB m_rgb;
+	Timer m_timer;
+};

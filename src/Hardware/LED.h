@@ -18,6 +18,9 @@ public:
 	LED();
 
 	void configure();
+	void enableFade();
+	void disableFade();
+	void startFade(const RGB &rgb);
 	void setRGB(const RGB &rgb);
 
 private:
@@ -26,4 +29,6 @@ private:
 	int m_gpioB;
 
 	RGB m_rgb;
+
+	ledc_channel_config_t m_ledConf[3]{};
 };

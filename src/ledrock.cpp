@@ -69,8 +69,8 @@ void app_main(void)
     //ESP_ERROR_CHECK(ledc_fade_func_install(ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_SHARED));
     //ESP_ERROR_CHECK(ledc_isr_register(led_isr_handler, NULL, ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_SHARED, NULL));
 
-    //ledc_set_fade_with_time(led_conf[RED].speed_mode, led_conf[RED].channel, 1023, 5000);
-    //ledc_fade_start(led_conf[RED].speed_mode, led_conf[RED].channel, LEDC_FADE_NO_WAIT);
+    //ledc_set_fade_with_time(m_ledConf[RED].speed_mode, m_ledConf[RED].channel, 1023, 5000);
+    //ledc_fade_start(m_ledConf[RED].speed_mode, m_ledConf[RED].channel, LEDC_FADE_NO_WAIT);
 
     
 
@@ -96,14 +96,17 @@ void app_main(void)
     auto switchColors = std::vector<RGB>{ RGB(1000, 1000, 0), RGB(0, 1000, 1000), RGB(1000, 0, 1000) };
     auto switchColor = std::unique_ptr<ColorMode>(new SwitchingColor(switchColors, swTim));
 
+    auto fadeColor = std::unique_ptr<ColorMode>(new FadingColor(RGB(1000, 1000, 1000), swTim));
+
     g_colorManager.addColorMode(move(red))
-        .addColorMode(move(yellow))
-        .addColorMode(move(green))
-        .addColorMode(move(switchColor));
+        .addColorMode(move(fadeColor));
+        //.addColorMode(move(yellow))
+        //.addColorMode(move(green))
+        //.addColorMode(move(switchColor));
     
     g_colorManager.start();
 
-    while (1)
+    while (true)
     {
         while (eventHandler.empty())
         {
