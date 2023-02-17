@@ -18,15 +18,7 @@
 
 
 
-
 #define BTN GPIO_NUM_18
-
-
-typedef std::list<std::function<void()>> EventHandler;
-EventHandler eventHandler;
-
-
-ColorManager g_colorManager;
 
 
 extern "C"
@@ -34,19 +26,48 @@ extern "C"
     void app_main();
     void IRAM_ATTR gpio_isr_handler(void *arg);
     bool IRAM_ATTR timer_isr_handler(void *arg);
+    bool IRAM_ATTR debounce_timer_handler(void *arg);
 }
+
+
+typedef std::list<std::function<void()>> EventHandler;
+EventHandler eventHandler;
+
+ColorManager g_colorManager;
+
+Timer g_debounceTimer(20, debounce_timer_handler, false, TIMER_0);
+static bool g_debounceTimerRunning { false };
+
 
 
 void IRAM_ATTR gpio_isr_handler(void *arg)
 {
-    // TODO: add debouncing mechanism, using a timer
-    ButtonPressedEvent ev(1337);
+    // timer already in progress, wait until finished before starting another one
+    if (g_debounceTimerRunning) return;
+    
+    g_debounceTimerRunning = true;
+    g_debounceTimer.restart();
+}
+
+
+bool IRAM_ATTR debounce_timer_handler(void *arg)
+{
+    // timer has stopped and generated called this function
+    g_debounceTimerRunning = false;
+
+    // Button has pull-up, so it is pressed when value = 0
+    if (gpio_get_level(BTN) == 1) return false;
+
+    // detected button press after debouncing
+    ButtonPressedEvent ev(0);
+
     /*
     * Here, we have to take the event by copy, since the variable goes out of scope
     * after this call. We also need to make the capture list mutable, due to the downcasting
     * in subsequent function calls.
     */
     eventHandler.push_back([ev]() mutable { g_colorManager.onEvent(&ev); });
+    return false;
 }
 
 
@@ -60,7 +81,7 @@ bool IRAM_ATTR timer_isr_handler(void *arg)
 
 bool IRAM_ATTR led_fade_isr_handler(const ledc_cb_param_t *param, void *arg)
 {
-
+    return false;
 }
 
 
@@ -93,16 +114,19 @@ void app_main(void)
     gpio_install_isr_service(0);
     gpio_isr_handler_add(BTN, gpio_isr_handler, NULL);
 
+    // TODO: initialize in constructor instead? RAII
+    g_debounceTimer.init();
+
 
     auto red = std::unique_ptr<ColorMode>(new StaticColor(RGB(1000, 0, 0)));
     auto yellow = std::unique_ptr<ColorMode>(new StaticColor(RGB(1000, 600, 0)));
     auto green = std::unique_ptr<ColorMode>(new StaticColor(RGB(0, 1000, 0)));
 
-    Timer swTim(1500, timer_isr_handler, true);
+    Timer swTim(1500, timer_isr_handler, true, TIMER_1);
     auto switchColors = std::vector<RGB>{ RGB(1000, 1000, 0), RGB(0, 1000, 1000), RGB(1000, 0, 1000) };
     auto switchColor = std::unique_ptr<ColorMode>(new SwitchingColor(switchColors, swTim));
 
-    auto fadeColor = std::unique_ptr<ColorMode>(new FadingColor(RGB(1000, 1000, 1000), swTim));
+    auto fadeColor = std::unique_ptr<ColorMode>(new FadingColor(RGB(0, 0, 0), RGB(1000, 1000, 1000), swTim));
 
     g_colorManager.addColorMode(move(red))
         .addColorMode(move(fadeColor));
