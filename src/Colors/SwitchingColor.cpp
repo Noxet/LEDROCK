@@ -21,14 +21,14 @@ void SwitchingColor::onEvent(Event *event)
 
 void SwitchingColor::setupImpl()
 {
-	m_led.configure();
+	getLed().configure();
 	m_timer.init();
 }
 
 
 void SwitchingColor::runImpl()
 {
-	m_led.setRGB(m_colors.at(m_currentColor));
+	getLed().setRGB(m_colors.at(m_currentColor));
 	m_timer.start();
 }
 
@@ -36,5 +36,5 @@ void SwitchingColor::runImpl()
 void SwitchingColor::next()
 {
 	m_currentColor = (m_currentColor + 1) % m_colors.size();
-	m_led.setRGB(m_colors.at(m_currentColor));
+	getLed().setRGB(m_colors.at(m_currentColor));
 }

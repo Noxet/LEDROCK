@@ -15,7 +15,7 @@ constexpr int g_clkFrequency = 5000;
 class LED
 {
 public:
-	LED();
+	explicit LED(ledc_cbs_t *callback);
 
 	void configure();
 	void enableFade();
@@ -31,4 +31,5 @@ private:
 	RGB m_rgb;
 
 	ledc_channel_config_t m_ledConf[3]{};
+	ledc_cbs_t *mp_callbacks;
 };

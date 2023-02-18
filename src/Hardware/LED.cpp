@@ -1,6 +1,6 @@
 #include "LED.h"
 
-LED::LED() : m_gpioR(g_gpioR), m_gpioG(g_gpioG), m_gpioB(g_gpioB)
+LED::LED(ledc_cbs_t *callback) : m_gpioR(g_gpioR), m_gpioG(g_gpioG), m_gpioB(g_gpioB), mp_callbacks(callback)
 {
     m_ledConf[0].gpio_num = m_gpioR;
     m_ledConf[0].speed_mode = LEDC_LOW_SPEED_MODE;
@@ -73,6 +73,7 @@ void LED::configure()
     for (int i = 0; i < 3; i++)
     {
         ledc_channel_config(&m_ledConf[i]);
+        ledc_cb_register(m_ledConf[i].speed_mode, m_ledConf[i].channel, mp_callbacks, nullptr);
     }
 }
 
@@ -97,6 +98,8 @@ void LED::startFade(const RGB &rgb)
     //ESP_ERROR_CHECK(ledc_fade_start(m_ledConf[0].speed_mode, m_ledConf[0].channel, LEDC_FADE_NO_WAIT));
 
     ESP_ERROR_CHECK(ledc_set_fade_time_and_start(m_ledConf[0].speed_mode, m_ledConf[0].channel, m_rgb.r, 5000, LEDC_FADE_NO_WAIT));
+    ESP_ERROR_CHECK(ledc_set_fade_time_and_start(m_ledConf[1].speed_mode, m_ledConf[1].channel, m_rgb.g, 5000, LEDC_FADE_NO_WAIT));
+    ESP_ERROR_CHECK(ledc_set_fade_time_and_start(m_ledConf[2].speed_mode, m_ledConf[2].channel, m_rgb.b, 5000, LEDC_FADE_NO_WAIT));
 }
 
 

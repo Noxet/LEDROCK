@@ -13,15 +13,16 @@ void FadingColor::onEvent(Event *event)
 
 	if (auto ev = event_cast<LEDFadeCompleteEvent>(event))
 	{
-		printf("[FadingColor] - Change color\n");
+		printf("[FadingColor] - New fade\n");
+		runImpl();
 	}
 }
 
 
 void FadingColor::setupImpl()
 {
-	m_led.configure();
-	m_led.enableFade();
+	getLed().configure();
+	getLed().enableFade();
 }
 
 
@@ -29,12 +30,12 @@ void FadingColor::runImpl()
 {
 	printf("[FadingColor] - Run\n");
 
-	m_led.setRGB(m_rgbFrom);
-	m_led.startFade(m_rgbTo);
+	getLed().setRGB(m_rgbFrom);
+	getLed().startFade(m_rgbTo);
 }
 
 
 void FadingColor::cleanupImpl()
 {
-	m_led.disableFade();
+	getLed().disableFade();
 }

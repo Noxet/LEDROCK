@@ -2,7 +2,7 @@
 
 #include "Events/Event.h"
 
-#include "Hardware/LED.h"
+#include "Utils.h"
 #include "Hardware/Timer.h"
 
 #include <vector>
@@ -20,9 +20,6 @@ public:
 	}
 
 	virtual void onEvent(Event *event) {}
-
-protected:
-	LED m_led;
 
 private:
 	virtual void setupImpl() {}

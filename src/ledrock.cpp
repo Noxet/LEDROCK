@@ -12,9 +12,11 @@
 
 #include "Events/ButtonEvent.h"
 #include "Events/TimerEvent.h"
+#include "Events/LEDEvent.h"
 #include "ColorManager.h"
 #include "Colors/ColorMode.h"
 #include "Colors/ColorUtils.h"
+#include "Utils.h"
 
 
 
@@ -27,6 +29,7 @@ extern "C"
     void IRAM_ATTR gpio_isr_handler(void *arg);
     bool IRAM_ATTR timer_isr_handler(void *arg);
     bool IRAM_ATTR debounce_timer_handler(void *arg);
+    bool IRAM_ATTR led_fade_handler(const ledc_cb_param_t *param, void *arg);
 }
 
 
@@ -79,9 +82,23 @@ bool IRAM_ATTR timer_isr_handler(void *arg)
 }
 
 
-bool IRAM_ATTR led_fade_isr_handler(const ledc_cb_param_t *param, void *arg)
+bool IRAM_ATTR led_fade_handler(const ledc_cb_param_t *param, void *arg)
 {
+    ets_printf("Got LED fade ISR\n");
+
+    LEDFadeCompleteEvent ev{};
+    eventHandler.push_back([ev]() mutable { g_colorManager.onEvent(&ev); });
     return false;
+}
+
+
+LED &getLed()
+{
+    static ledc_cbs_t callbacks = {
+        .fade_cb = led_fade_handler
+    };
+
+    static LED led(&callbacks);
 }
 
 
