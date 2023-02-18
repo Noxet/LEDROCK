@@ -7,11 +7,11 @@ StaticColor::StaticColor(const RGB &rgb) : m_rgb(rgb)
 
 void StaticColor::setupImpl()
 {
-	m_led.configure();
+	getLed().configure();
 }
 
 
 void StaticColor::runImpl()
 {
-	m_led.setRGB(m_rgb);
+	getLed().setRGB(m_rgb);
 }

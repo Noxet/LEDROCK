@@ -45,6 +45,7 @@ static bool g_debounceTimerRunning { false };
 
 void IRAM_ATTR gpio_isr_handler(void *arg)
 {
+    ets_printf("Button Pressed ISR Handler\n");
     // timer already in progress, wait until finished before starting another one
     if (g_debounceTimerRunning) return;
     
@@ -84,7 +85,7 @@ bool IRAM_ATTR timer_isr_handler(void *arg)
 
 bool IRAM_ATTR led_fade_handler(const ledc_cb_param_t *param, void *arg)
 {
-    ets_printf("Got LED fade ISR\n");
+    ets_printf("Got LED fade Callback!\n");
 
     LEDFadeCompleteEvent ev{};
     eventHandler.push_back([ev]() mutable { g_colorManager.onEvent(&ev); });
@@ -99,6 +100,7 @@ LED &getLed()
     };
 
     static LED led(&callbacks);
+    return led;
 }
 
 
