@@ -30,8 +30,6 @@ void FadingColor::setupImpl()
 
 void FadingColor::runImpl()
 {
-	printf("[FadingColor] - Run\n");
-
 	getLed().setRGB(m_rgbFrom);
 	getLed().startFade(m_rgbTo);
 

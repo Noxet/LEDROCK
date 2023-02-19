@@ -159,7 +159,7 @@ void app_main(void)
     auto switchColors = std::vector<RGB>{ RGB(1000, 1000, 0), RGB(0, 1000, 1000), RGB(1000, 0, 1000) };
     auto switchColor = std::unique_ptr<ColorMode>(new SwitchingColor(switchColors, swTim));
 
-    auto fadeColor = std::unique_ptr<ColorMode>(new FadingColor(RGB(1000, 1000, 0), RGB(0, 0, 1000), swTim));
+    auto fadeColor = std::unique_ptr<ColorMode>(new FadingColor(RGB("b8ee30"), RGB("26dfd0"), swTim));
 
     g_colorManager.addColorMode(move(red))
         .addColorMode(move(fadeColor));
