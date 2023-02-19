@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/semphr.h"
 #include "driver/ledc.h"
 #include "driver/gpio.h"
 #include "esp_err.h"
@@ -41,6 +42,7 @@ ColorManager g_colorManager;
 Timer g_debounceTimer(20, debounce_timer_handler, false, TIMER_0);
 static bool g_debounceTimerRunning { false };
 
+static int g_fadeCompleteCount = 0;
 
 
 void IRAM_ATTR gpio_isr_handler(void *arg)
@@ -85,11 +87,24 @@ bool IRAM_ATTR timer_isr_handler(void *arg)
 
 bool IRAM_ATTR led_fade_handler(const ledc_cb_param_t *param, void *arg)
 {
-    ets_printf("Got LED fade Callback!\n");
+    portBASE_TYPE taskAwoken = pdFALSE;
 
-    LEDFadeCompleteEvent ev{};
-    eventHandler.push_back([ev]() mutable { g_colorManager.onEvent(&ev); });
-    return false;
+    if (param->event == LEDC_FADE_END_EVT)
+    {
+        ++g_fadeCompleteCount;
+
+        if (g_fadeCompleteCount >= 3)
+        {
+            // Only generate event when all LEDs are done fading
+            LEDFadeCompleteEvent ev{};
+            eventHandler.push_back([ev]() mutable { g_colorManager.onEvent(&ev); });
+            g_fadeCompleteCount = 0;
+        }
+        
+    }
+
+    
+    return (taskAwoken == pdTRUE);
 }
 
 
@@ -106,7 +121,6 @@ LED &getLed()
 
 void app_main(void)
 {
-
 
     /**
      * Enable HW fade and register interrupt.
@@ -145,7 +159,7 @@ void app_main(void)
     auto switchColors = std::vector<RGB>{ RGB(1000, 1000, 0), RGB(0, 1000, 1000), RGB(1000, 0, 1000) };
     auto switchColor = std::unique_ptr<ColorMode>(new SwitchingColor(switchColors, swTim));
 
-    auto fadeColor = std::unique_ptr<ColorMode>(new FadingColor(RGB(0, 0, 0), RGB(1000, 1000, 1000), swTim));
+    auto fadeColor = std::unique_ptr<ColorMode>(new FadingColor(RGB(1000, 1000, 0), RGB(0, 0, 1000), swTim));
 
     g_colorManager.addColorMode(move(red))
         .addColorMode(move(fadeColor));

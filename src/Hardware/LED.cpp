@@ -1,5 +1,9 @@
 #include "LED.h"
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "esp_err.h"
+
 LED::LED(ledc_cbs_t *callback) : m_gpioR(g_gpioR), m_gpioG(g_gpioG), m_gpioB(g_gpioB), mp_callbacks(callback)
 {
     m_ledConf[0].gpio_num = m_gpioR;
@@ -139,11 +143,14 @@ void LED::setRGB(const RGB &rgb)
 {
     m_rgb = rgb;
 
+    ets_printf("[SET RGB] - Before SET\n");
     ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, m_rgb.r);
     ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1, m_rgb.g);
     ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_2, m_rgb.b);
+    ets_printf("[SET RGB] - Before UPDATE\n");
     ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
     ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1);
     ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_2);
+    ets_printf("[SET RGB] - AFTER UPDATE\n");
 }
 
