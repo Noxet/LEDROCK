@@ -27,5 +27,6 @@ private:
     ledcChannels m_ledConfig;
     SemaphoreHandle_t m_ledSem;
 
-    static bool ledcFadeEndCB(const ledc_cb_param_t *param, void *userArg);
+    // ISR callback
+    static bool IRAM_ATTR ledcFadeEndCB(const ledc_cb_param_t *param, void *userArg);
 };

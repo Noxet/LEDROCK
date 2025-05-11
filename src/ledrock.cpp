@@ -2,23 +2,8 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "esp_chip_info.h"
-#include "esp_flash.h"
-#include "esp_system.h"
 
-#include "driver/gpio.h"
-#include "driver/ledc.h"
-#include "hal/ledc_types.h"
-#include "portmacro.h"
-#include "soc/clk_tree_defs.h"
-
-#include <atomic>
 #include <stdio.h>
-#include <inttypes.h>
-
-constexpr gpio_num_t LEDPIN = GPIO_NUM_16;
-
-std::atomic<int> count = 0;
 
 
 extern "C" void app_main(void)
