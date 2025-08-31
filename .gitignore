@@ -57,3 +57,9 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+
+## Altium
+
+History/
+__Previews/
