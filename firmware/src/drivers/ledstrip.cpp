@@ -5,8 +5,8 @@
 #include "portmacro.h"
 
 
-constexpr int GPIO_R = 16;
-constexpr int GPIO_G = 17;
+constexpr int GPIO_R = 3;
+constexpr int GPIO_G = 4;
 constexpr int GPIO_B = 5;
 
 constexpr uint32_t LED_COLOR_SCALE = 32;
@@ -16,7 +16,7 @@ Ledstrip::Ledstrip()
 {
     m_ledConfig.r = {
         .gpio_num = GPIO_R,
-        .speed_mode = LEDC_HIGH_SPEED_MODE,
+        .speed_mode = LEDC_LOW_SPEED_MODE,
         .channel = LEDC_CHANNEL_0,
         .intr_type = LEDC_INTR_DISABLE,
         .timer_sel = LEDC_TIMER_0,
@@ -28,7 +28,7 @@ Ledstrip::Ledstrip()
 
     m_ledConfig.g = {
         .gpio_num = GPIO_G,
-        .speed_mode = LEDC_HIGH_SPEED_MODE,
+        .speed_mode = LEDC_LOW_SPEED_MODE,
         .channel = LEDC_CHANNEL_1,
         .intr_type = LEDC_INTR_DISABLE,
         .timer_sel = LEDC_TIMER_1,
@@ -40,7 +40,7 @@ Ledstrip::Ledstrip()
 
     m_ledConfig.b = {
         .gpio_num = GPIO_B,
-        .speed_mode = LEDC_HIGH_SPEED_MODE,
+        .speed_mode = LEDC_LOW_SPEED_MODE,
         .channel = LEDC_CHANNEL_2,
         .intr_type = LEDC_INTR_DISABLE,
         .timer_sel = LEDC_TIMER_2,
@@ -58,7 +58,7 @@ void Ledstrip::init()
 {
     ledc_timer_t timers[] = {LEDC_TIMER_0, LEDC_TIMER_1, LEDC_TIMER_2};
     ledc_timer_config_t ledc_timer = {
-        .speed_mode = LEDC_HIGH_SPEED_MODE,
+        .speed_mode = LEDC_LOW_SPEED_MODE,
         .duty_resolution = LEDC_TIMER_13_BIT,
         .timer_num = LEDC_TIMER_0,
         .freq_hz = 4000,
@@ -102,8 +102,6 @@ void Ledstrip::setStaticColor(const Color &color)
 void Ledstrip::setFadeColor(const Color &from, const Color &to, uint32_t time)
 {
     for (int i = 0; i < 3; ++i) xSemaphoreTake(m_ledSem, portMAX_DELAY);
-    setStaticColor(from);
-    vTaskDelay(20/portTICK_PERIOD_MS);
     ledc_set_fade_time_and_start(m_ledConfig.r.speed_mode, m_ledConfig.r.channel, to.r * LED_COLOR_SCALE, time, LEDC_FADE_NO_WAIT);
     ledc_set_fade_time_and_start(m_ledConfig.g.speed_mode, m_ledConfig.g.channel, to.g * LED_COLOR_SCALE, time, LEDC_FADE_NO_WAIT);
     ledc_set_fade_time_and_start(m_ledConfig.b.speed_mode, m_ledConfig.b.channel, to.b * LED_COLOR_SCALE, time, LEDC_FADE_NO_WAIT);

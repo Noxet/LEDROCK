@@ -1,6 +1,7 @@
 #pragma once
 
 #include "color.h"
+#include <cstdint>
 
 class ILedDriver
 {

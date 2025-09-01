@@ -58,8 +58,9 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
-
 ## Altium
 
 History/
 __Previews/
+
+.cache/
