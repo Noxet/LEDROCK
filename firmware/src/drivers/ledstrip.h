@@ -1,7 +1,8 @@
 #pragma once
 
-#include "core/led_driver.h"
+#include "core/color.h"
 
+#include "core/led_driver.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "driver/ledc.h"
