@@ -63,4 +63,6 @@ dkms.conf
 History/
 __Previews/
 
+# Other
 .cache/
+.clangd
