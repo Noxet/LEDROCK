@@ -4,11 +4,13 @@
 #include "driver/usb_serial_jtag.h"
 #include "esp_err.h"
 #include "esp_intr_alloc.h"
+#include "freertos/idf_additions.h"
+#include "freertos/projdefs.h"
 #include <cstring>
 
 
-UartCLI::UartCLI(LedController &controller)
-    : m_controller(controller)
+UartCLI::UartCLI(QueueHandle_t &lcQueue)
+    : m_lcQueue(lcQueue)
 {
     usb_serial_jtag_driver_config_t usb_config = {
         .tx_buffer_size = 1024,
@@ -28,33 +30,18 @@ bool UartCLI::hasPacket()
 }
 
 
+/**
+ * Protocol:
+ * |action|
+ */
 void UartCLI::parse()
 {
-    switch (m_buffer[0])
+    printf("parse\n");
+    if (xQueueSend(m_lcQueue, &m_buffer[0], 10) != pdPASS)
     {
-        case '0':
-            m_controller.setStaticColor(Color{"000000"});
-            break;
-        case '1':
-            m_controller.setStaticColor(Color{"FF0000"});
-            break;
-        case '2':
-            m_controller.setStaticColor(Color{"00FF00"});
-            break;
-        case '3':
-            m_controller.setStaticColor(Color{"0000FF"});
-            break;
-        case '4':
-            m_controller.setStaticColor(Color{"FFFFFF"});
-            break;
-        case '5':
-            m_controller.setStaticColor(Color{255, 182, 78});
-            break;
-        case '6':
-            m_controller.setStaticColor(Color{"FFD400"});
-            break;
+        printf("UART Failed to send data\n");
     }
-    m_bufferToParse = false;
+//     m_bufferToParse = false;
 }
 
 

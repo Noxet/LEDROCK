@@ -16,8 +16,10 @@ extern "C" void app_main(void)
     Ledstrip leds;
     LedController lc{leds};
     lc.init();
-    UartCLI cli{lc};
+    UartCLI cli{lc.m_queue};
     // UartCLI uart(lc);
+
+    xTaskCreate(&LedController::ledControllerTask, "lc task", 1024, &lc, 10, nullptr);
 
 
     while (1)

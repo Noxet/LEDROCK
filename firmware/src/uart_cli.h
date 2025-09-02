@@ -1,11 +1,12 @@
 #pragma once
 
+#include "freertos/idf_additions.h"
 #include "led_controller.h"
 
 class UartCLI
 {
 public:
-    UartCLI(LedController &controller);
+    UartCLI(QueueHandle_t &lcQueue);
 
     void poll();
     bool hasPacket();
@@ -18,7 +19,7 @@ public:
     }
 
 private:
-    LedController &m_controller;
+    QueueHandle_t &m_lcQueue;
 
     uint8_t m_buffer[256];
     uint8_t m_bufferPos;
