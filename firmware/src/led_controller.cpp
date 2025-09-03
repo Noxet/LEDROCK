@@ -1,13 +1,24 @@
 #include "led_controller.h"
 #include "core/color.h"
 
+#include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/idf_additions.h"
 #include "freertos/projdefs.h"
 #include "freertos/task.h"
 #include "portmacro.h"
+#include "sdkconfig.h"
 #include <cstdint>
+#include <iostream>
 
+static const char *TAG = "LC";
+
+enum class LCSTATE
+{
+    IDLE,
+    ONE_SHOT,
+    REPEAT,
+};
 
 LedController::LedController(ILedDriver &driver)
     : m_driver(driver)
@@ -24,40 +35,43 @@ void LedController::init()
 
 void LedController::run()
 {
-    uint8_t data;
+    LCSTATE state = LCSTATE::IDLE;
+    uint8_t event;
     while (1)
     {
-        if (xQueueReceive(m_queue, &data, 10) == pdPASS)
+        if (xQueueReceive(m_queue, &event, 10) != pdPASS)
         {
-            printf("LC got data\n");
-
-            switch (data)
-            {
-                case '0':
+            event = 0;
+        }
+        switch (state)
+        {
+            case LCSTATE::IDLE:
+                printf("idle state\n");
+                if (event >= '0' && event < '9')
+                {
+                    state = LCSTATE::ONE_SHOT;
+                }
+                if (event == '9') state = LCSTATE::REPEAT;
+                break;
+            case LCSTATE::ONE_SHOT:
+                printf("one shot state\n");
+                setStaticColor(Color{255, 182, 78});
+                state = LCSTATE::IDLE;
+                break;
+            case LCSTATE::REPEAT:
+                printf("repeat state\n");
+                if (event == '0')
+                {
                     setStaticColor(Color{"000000"});
-                    break;
-                case '1':
-                    setStaticColor(Color{"FF0000"});
-                    break;
-                case '2':
-                    setStaticColor(Color{"00FF00"});
-                    break;
-                case '3':
-                    setStaticColor(Color{"0000FF"});
-                    break;
-                case '4':
-                    setStaticColor(Color{"FFFFFF"});
-                    break;
-                case '5':
-                    setStaticColor(Color{255, 182, 78});
-                    break;
-                case '6':
-                    setStaticColor(Color{"FFD400"});
-                    break;
-                case '7':
-                    setFadeColor(Color{"FF12A0"}, Color{"A0BD45"}, 3000);
-                    break;
-            }
+                    state = LCSTATE::IDLE;
+                }
+                else
+                {
+                    printf("setting pulse\n");
+                    setPulseColor(Color{"FFD400"}, Color{"A0BD45"}, 3000);
+                    printf("pulse done\n");
+                }
+                break;
         }
     }
 }
@@ -78,6 +92,14 @@ void LedController::setFadeColor(const Color &from, const Color &to, uint32_t ti
 
 void LedController::setPulseColor(const Color &from, const Color &to, uint32_t time)
 {
+    static Color _from = from;
+    static Color _to = to;
+
+    setFadeColor(_from, _to, time);
+
+    Color tmp = _from;
+    _from = _to;
+    _to = tmp;
 }
 
 
@@ -86,6 +108,8 @@ void LedController::setPulseColor(const Color &from, const Color &to, uint32_t t
  */
 void LedController::ledControllerTask(void *pvParam)
 {
+    // TODO: Add logging over wifi, and abort
+    assert(pvParam);
     LedController *lc = static_cast<LedController *>(pvParam);
     lc->run();
 }
