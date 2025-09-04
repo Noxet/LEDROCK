@@ -1,8 +1,14 @@
 #include "ledstrip.h"
+#include "core/sys.h"
 #include "driver/ledc.h"
+
+#include "esp_log.h"
+#include "esp_timer.h"
 #include "freertos/idf_additions.h"
+#include "freertos/projdefs.h"
 #include "hal/ledc_types.h"
 #include "portmacro.h"
+#include "freertos/semphr.h"
 
 
 constexpr int GPIO_R = 3;
@@ -88,23 +94,35 @@ void Ledstrip::init()
 }
 
 
-void Ledstrip::setStaticColor(const Color &color)
+bool Ledstrip::setStaticColor(const Color &color)
 {
+
+    /*
+     * If there is any fade currently running, we can not set any new fade or static color
+     * until the hw fade has completed. Therefore, we need to check the semaphore, if all
+     * fades (RGB) has finished before attempting to set any new color.
+    */
+    if (uxSemaphoreGetCount(m_ledSem) < 2) return false;
     ledc_set_duty(m_ledConfig.r.speed_mode, m_ledConfig.r.channel, color.r * LED_COLOR_SCALE);
     ledc_set_duty(m_ledConfig.g.speed_mode, m_ledConfig.g.channel, color.g * LED_COLOR_SCALE);
     ledc_set_duty(m_ledConfig.b.speed_mode, m_ledConfig.b.channel, color.b * LED_COLOR_SCALE);
     ledc_update_duty(m_ledConfig.r.speed_mode, m_ledConfig.r.channel);
     ledc_update_duty(m_ledConfig.g.speed_mode, m_ledConfig.g.channel);
     ledc_update_duty(m_ledConfig.b.speed_mode, m_ledConfig.b.channel);
+    return true;
 }
 
 
-void Ledstrip::setFadeColor(const Color &from, const Color &to, uint32_t time)
+bool Ledstrip::setFadeColor(const Color &from, const Color &to, uint32_t time)
 {
-    for (int i = 0; i < 3; ++i) xSemaphoreTake(m_ledSem, portMAX_DELAY);
+    // printf("[%lld ms] sem count: %d\n", esp_timer_get_time() / 1000, uxSemaphoreGetCount(m_ledSem));
+    if (uxSemaphoreGetCount(m_ledSem) < 2) return false;
+    for (int i = 0; i < 3; i++) xQueueSemaphoreTake(m_ledSem, portMAX_DELAY);
+
     ledc_set_fade_time_and_start(m_ledConfig.r.speed_mode, m_ledConfig.r.channel, to.r * LED_COLOR_SCALE, time, LEDC_FADE_NO_WAIT);
     ledc_set_fade_time_and_start(m_ledConfig.g.speed_mode, m_ledConfig.g.channel, to.g * LED_COLOR_SCALE, time, LEDC_FADE_NO_WAIT);
     ledc_set_fade_time_and_start(m_ledConfig.b.speed_mode, m_ledConfig.b.channel, to.b * LED_COLOR_SCALE, time, LEDC_FADE_NO_WAIT);
+    return true;
 }
 
 
@@ -115,6 +133,7 @@ bool Ledstrip::ledcFadeEndCB(const ledc_cb_param_t *param, void *userArg)
     if (param->event == LEDC_FADE_END_EVT)
     {
         SemaphoreHandle_t sem = (SemaphoreHandle_t) userArg;
+        // ESP_EARLY_LOGW("LC", "[%lld ms] giving sem: %d", getUptime(), uxSemaphoreGetCount(sem));
         xSemaphoreGiveFromISR(sem, &taskAwoken);
     }
 

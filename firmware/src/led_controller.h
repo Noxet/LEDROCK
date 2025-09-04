@@ -15,10 +15,10 @@ public:
 
 private:
     void run();
-    void setStaticColor(const Color &color);
-    void setFadeColor(const Color &from, const Color &to, uint32_t time);
-    void setPulseColor(const Color &from, const Color &to, uint32_t time);
-    void setBlinkColor(const Color &color1, const Color &color2, uint32_t time);
+    bool setStaticColor(const Color &color);
+    bool setFadeColor(const Color &from, const Color &to, uint32_t time);
+    bool setPulseColor(const Color &from, const Color &to, uint32_t time);
+    bool setBlinkColor(const Color &color1, const Color &color2, uint32_t time);
 
 
 public:

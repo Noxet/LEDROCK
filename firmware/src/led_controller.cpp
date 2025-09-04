@@ -1,6 +1,7 @@
 #include "led_controller.h"
 #include "core/color.h"
 
+#include "core/sys.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/idf_additions.h"
@@ -11,14 +12,15 @@
 #include <cstdint>
 #include <iostream>
 
-static const char *TAG = "LC";
 
 enum class LCSTATE
 {
     IDLE,
     ONE_SHOT,
     REPEAT,
+    CLEAR,
 };
+
 
 LedController::LedController(ILedDriver &driver)
     : m_driver(driver)
@@ -46,7 +48,6 @@ void LedController::run()
         switch (state)
         {
             case LCSTATE::IDLE:
-                printf("idle state\n");
                 if (event >= '0' && event < '9')
                 {
                     state = LCSTATE::ONE_SHOT;
@@ -54,22 +55,25 @@ void LedController::run()
                 if (event == '9') state = LCSTATE::REPEAT;
                 break;
             case LCSTATE::ONE_SHOT:
-                printf("one shot state\n");
-                setStaticColor(Color{255, 182, 78});
-                state = LCSTATE::IDLE;
+                if (setStaticColor(Color{255, 182, 78}))
+                {
+                    state = LCSTATE::IDLE;
+                }
                 break;
             case LCSTATE::REPEAT:
-                printf("repeat state\n");
                 if (event == '0')
                 {
-                    setStaticColor(Color{"000000"});
-                    state = LCSTATE::IDLE;
+                    state = LCSTATE::CLEAR;
                 }
                 else
                 {
-                    printf("setting pulse\n");
                     setPulseColor(Color{"FFD400"}, Color{"A0BD45"}, 3000);
-                    printf("pulse done\n");
+                }
+                break;
+            case LCSTATE::CLEAR:
+                if (setStaticColor(Color{"000000"}))
+                {
+                    state = LCSTATE::IDLE;
                 }
                 break;
         }
@@ -77,29 +81,37 @@ void LedController::run()
 }
 
 
-void LedController::setStaticColor(const Color &color)
+bool LedController::setStaticColor(const Color &color)
 {
-    m_driver.setStaticColor(color);
+    // printf("[%lld] set static\n", getUptime());
+    bool ret = m_driver.setStaticColor(color);
+    return ret;
+    // printf("[%lld] static done\n", getUptime());
 }
 
 
-void LedController::setFadeColor(const Color &from, const Color &to, uint32_t time)
+bool LedController::setFadeColor(const Color &from, const Color &to, uint32_t time)
 {
+    // printf("[%lld] set fade\n", getUptime());
     setStaticColor(from);
     vTaskDelay(20 / portTICK_PERIOD_MS);
-    m_driver.setFadeColor(from, to, time);
+    bool ret = m_driver.setFadeColor(from, to, time);
+    return ret;
+    // printf("[%lld] fade done\n", getUptime());
 }
 
-void LedController::setPulseColor(const Color &from, const Color &to, uint32_t time)
+bool LedController::setPulseColor(const Color &from, const Color &to, uint32_t time)
 {
     static Color _from = from;
     static Color _to = to;
 
-    setFadeColor(_from, _to, time);
+    bool ret = setFadeColor(_from, _to, time);
 
+    // swap so we can fade the other way the next time the function is called.
     Color tmp = _from;
     _from = _to;
     _to = tmp;
+    return ret;
 }
 
 

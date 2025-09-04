@@ -13,8 +13,8 @@ public:
     Ledstrip();
 
     void init() override;
-    void setStaticColor(const Color &color) override;
-    void setFadeColor(const Color &from, const Color &to, uint32_t time) override;
+    bool setStaticColor(const Color &color) override;
+    bool setFadeColor(const Color &from, const Color &to, uint32_t time) override;
 
 private:
 
