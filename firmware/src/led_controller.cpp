@@ -3,6 +3,7 @@
 
 #include "core/sys.h"
 #include "esp_log.h"
+#include "esp_task_wdt.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/idf_additions.h"
 #include "freertos/projdefs.h"
@@ -41,18 +42,21 @@ void LedController::run()
     uint8_t event;
     while (1)
     {
-        if (xQueueReceive(m_queue, &event, 10) != pdPASS)
+        // non-blocking check if there is new messages
+        if (xQueueReceive(m_queue, &event, 0) != pdPASS)
         {
             event = 0;
         }
+
         switch (state)
         {
             case LCSTATE::IDLE:
-                if (event >= '0' && event < '9')
+                if (event > '0' && event < '9')
                 {
                     state = LCSTATE::ONE_SHOT;
                 }
                 if (event == '9') state = LCSTATE::REPEAT;
+                if (event == '0') state = LCSTATE::CLEAR;
                 break;
             case LCSTATE::ONE_SHOT:
                 if (setStaticColor(Color{255, 182, 78}))
@@ -77,6 +81,9 @@ void LedController::run()
                 }
                 break;
         }
+
+        // pet the dog
+        vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
 

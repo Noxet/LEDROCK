@@ -37,10 +37,12 @@ bool UartCLI::hasPacket()
 void UartCLI::parse()
 {
     printf("parse\n");
+    // TODO: log failed posts to queue
     if (xQueueSend(m_lcQueue, &m_buffer[0], 10) != pdPASS)
     {
         printf("UART Failed to send data\n");
     }
+    printf("sent to queue\n");
 //     m_bufferToParse = false;
 }
 

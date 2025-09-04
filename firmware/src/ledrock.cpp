@@ -26,7 +26,7 @@ extern "C" void app_main(void)
     {
         //gpio_set_level(LEDPIN, 1);
         cli.poll();
-        vTaskDelay(100 / portTICK_PERIOD_MS);
+        vTaskDelay(10 / portTICK_PERIOD_MS);
         //gpio_set_level(LEDPIN, 0);
         //vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
