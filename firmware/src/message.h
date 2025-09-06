@@ -1,0 +1,37 @@
+#include "core/color.h"
+
+#include <cstdint>
+#include <variant>
+
+enum class MsgType : uint8_t
+{
+    NONE,
+    STATIC = 1,
+    FADE = 2,
+};
+
+
+struct StaticColor
+{
+    RGB color;
+};
+
+struct FadeColor
+{
+    RGB from;
+    RGB to;
+    uint32_t time;
+};
+
+
+struct Event
+{
+    MsgType type;
+    union
+    {
+        StaticColor staticColor;
+        FadeColor fadeColor;
+    } data;
+};
+
+static_assert(std::is_trivially_copyable_v<Event>, "Must be POD for FreeRTOS queue");

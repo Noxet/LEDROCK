@@ -2,6 +2,7 @@
 
 #include "freertos/idf_additions.h"
 #include "led_controller.h"
+#include <cstdint>
 
 class UartCLI
 {
@@ -19,9 +20,18 @@ public:
     }
 
 private:
+    uint8_t read_u8_le();
+    uint16_t read_u16_le();
+    uint32_t read_u32_le();
+
+
+private:
     QueueHandle_t &m_lcQueue;
 
     uint8_t m_buffer[256];
-    uint8_t m_bufferPos;
+    uint8_t m_bufferDataSize;
+    uint8_t *m_bufferReadPos;
     bool m_bufferToParse;
 };
+
+

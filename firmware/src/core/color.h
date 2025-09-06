@@ -4,12 +4,18 @@
 #include <format>
 #include <string>
 
-struct Color
+struct RGB
 {
-    Color(uint8_t r, uint8_t g, uint8_t b);
-    Color(const std::string &hexCode);
-
     uint8_t r;
     uint8_t g;
     uint8_t b;
+};
+
+struct Color
+{
+    Color(uint8_t r, uint8_t g, uint8_t b);
+    Color(RGB rgb);
+    Color(const std::string &hexCode);
+
+    RGB rgb;
 };

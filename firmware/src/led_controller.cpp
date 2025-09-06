@@ -1,4 +1,5 @@
 #include "led_controller.h"
+#include "message.h"
 #include "core/color.h"
 
 #include "core/sys.h"
@@ -11,7 +12,9 @@
 #include "portmacro.h"
 #include "sdkconfig.h"
 #include <cstdint>
+#include <cstring>
 #include <iostream>
+#include <optional>
 
 
 enum class LCSTATE
@@ -26,7 +29,7 @@ enum class LCSTATE
 LedController::LedController(ILedDriver &driver)
     : m_driver(driver)
 {
-    m_queue = xQueueCreate(10, sizeof(uint8_t));
+    m_queue = xQueueCreate(10, sizeof(Event));
 }
 
 
@@ -39,40 +42,56 @@ void LedController::init()
 void LedController::run()
 {
     LCSTATE state = LCSTATE::IDLE;
-    uint8_t event;
+    Event newEv;
+    std::optional<Event> ev;
     while (1)
     {
         // non-blocking check if there is new messages
-        if (xQueueReceive(m_queue, &event, 0) != pdPASS)
+        if (xQueueReceive(m_queue, &newEv, 0) == pdPASS)
         {
-            event = 0;
+            ev = newEv;
+        }
+        else
+        {
+            memset(&newEv, 0, sizeof(Event));
+            newEv.type = MsgType::NONE;
         }
 
         switch (state)
         {
             case LCSTATE::IDLE:
-                if (event > '0' && event < '9')
+                if (!ev) break;
+                switch(ev->type)
                 {
-                    state = LCSTATE::ONE_SHOT;
+                    case MsgType::STATIC:
+                        // if (setStaticColor(ev->data.staticColor.color))
+                        // {
+                        //     state = LCSTATE::IDLE;
+                        //     ev.reset();
+                        // }
+                        state = LCSTATE::ONE_SHOT;
+                        break;
+                    case MsgType::FADE:
+                        printf("Set fade color\n");
+                        if (setFadeColor(ev->data.fadeColor.from, ev->data.fadeColor.to, ev->data.fadeColor.time))
+                        {
+                            state = LCSTATE::IDLE;
+                            printf("fade success, clear ev\n");
+                            ev.reset();
+                        }
+                        break;
+                    case MsgType::NONE:
+                        break;
                 }
-                if (event == '9') state = LCSTATE::REPEAT;
-                if (event == '0') state = LCSTATE::CLEAR;
                 break;
             case LCSTATE::ONE_SHOT:
-                if (setStaticColor(Color{255, 182, 78}))
+                if (setStaticColor(ev->data.staticColor.color))
                 {
                     state = LCSTATE::IDLE;
+                    ev.reset();
                 }
                 break;
             case LCSTATE::REPEAT:
-                if (event == '0')
-                {
-                    state = LCSTATE::CLEAR;
-                }
-                else
-                {
-                    setPulseColor(Color{"FFD400"}, Color{"A0BD45"}, 3000);
-                }
                 break;
             case LCSTATE::CLEAR:
                 if (setStaticColor(Color{"000000"}))

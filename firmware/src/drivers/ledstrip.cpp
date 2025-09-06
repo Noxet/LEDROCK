@@ -103,9 +103,9 @@ bool Ledstrip::setStaticColor(const Color &color)
      * fades (RGB) has finished before attempting to set any new color.
     */
     if (uxSemaphoreGetCount(m_ledSem) < 2) return false;
-    ledc_set_duty(m_ledConfig.r.speed_mode, m_ledConfig.r.channel, color.r * LED_COLOR_SCALE);
-    ledc_set_duty(m_ledConfig.g.speed_mode, m_ledConfig.g.channel, color.g * LED_COLOR_SCALE);
-    ledc_set_duty(m_ledConfig.b.speed_mode, m_ledConfig.b.channel, color.b * LED_COLOR_SCALE);
+    ledc_set_duty(m_ledConfig.r.speed_mode, m_ledConfig.r.channel, color.rgb.r * LED_COLOR_SCALE);
+    ledc_set_duty(m_ledConfig.g.speed_mode, m_ledConfig.g.channel, color.rgb.g * LED_COLOR_SCALE);
+    ledc_set_duty(m_ledConfig.b.speed_mode, m_ledConfig.b.channel, color.rgb.b * LED_COLOR_SCALE);
     ledc_update_duty(m_ledConfig.r.speed_mode, m_ledConfig.r.channel);
     ledc_update_duty(m_ledConfig.g.speed_mode, m_ledConfig.g.channel);
     ledc_update_duty(m_ledConfig.b.speed_mode, m_ledConfig.b.channel);
@@ -119,9 +119,9 @@ bool Ledstrip::setFadeColor(const Color &from, const Color &to, uint32_t time)
     if (uxSemaphoreGetCount(m_ledSem) < 2) return false;
     for (int i = 0; i < 3; i++) xQueueSemaphoreTake(m_ledSem, portMAX_DELAY);
 
-    ledc_set_fade_time_and_start(m_ledConfig.r.speed_mode, m_ledConfig.r.channel, to.r * LED_COLOR_SCALE, time, LEDC_FADE_NO_WAIT);
-    ledc_set_fade_time_and_start(m_ledConfig.g.speed_mode, m_ledConfig.g.channel, to.g * LED_COLOR_SCALE, time, LEDC_FADE_NO_WAIT);
-    ledc_set_fade_time_and_start(m_ledConfig.b.speed_mode, m_ledConfig.b.channel, to.b * LED_COLOR_SCALE, time, LEDC_FADE_NO_WAIT);
+    ledc_set_fade_time_and_start(m_ledConfig.r.speed_mode, m_ledConfig.r.channel, to.rgb.r * LED_COLOR_SCALE, time, LEDC_FADE_NO_WAIT);
+    ledc_set_fade_time_and_start(m_ledConfig.g.speed_mode, m_ledConfig.g.channel, to.rgb.g * LED_COLOR_SCALE, time, LEDC_FADE_NO_WAIT);
+    ledc_set_fade_time_and_start(m_ledConfig.b.speed_mode, m_ledConfig.b.channel, to.rgb.b * LED_COLOR_SCALE, time, LEDC_FADE_NO_WAIT);
     return true;
 }
 
