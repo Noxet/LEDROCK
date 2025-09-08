@@ -5,9 +5,10 @@
 
 enum class MsgType : uint8_t
 {
-    NONE,
-    STATIC = 1,
-    FADE = 2,
+    NONE = 0,
+    STATIC,
+    FADE,
+    PULSE,
 };
 
 

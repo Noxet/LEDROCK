@@ -56,6 +56,8 @@ void UartCLI::parse()
             }
             break;
         case MsgType::FADE:
+            /* Fall-through */
+        case MsgType::PULSE:
             {
                 e.data.fadeColor.from.r = read_u8_le();
                 e.data.fadeColor.from.g = read_u8_le();

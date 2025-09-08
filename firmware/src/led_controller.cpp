@@ -4,24 +4,20 @@
 
 #include "core/sys.h"
 #include "esp_log.h"
-#include "esp_task_wdt.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/idf_additions.h"
 #include "freertos/projdefs.h"
 #include "freertos/task.h"
 #include "portmacro.h"
-#include "sdkconfig.h"
 #include <cstdint>
 #include <cstring>
-#include <iostream>
 #include <optional>
 
 
 enum class LCSTATE
 {
     IDLE,
-    ONE_SHOT,
-    REPEAT,
+    PULSE,
     CLEAR,
 };
 
@@ -64,34 +60,34 @@ void LedController::run()
                 switch(ev->type)
                 {
                     case MsgType::STATIC:
-                        // if (setStaticColor(ev->data.staticColor.color))
-                        // {
-                        //     state = LCSTATE::IDLE;
-                        //     ev.reset();
-                        // }
-                        state = LCSTATE::ONE_SHOT;
-                        break;
-                    case MsgType::FADE:
-                        printf("Set fade color\n");
-                        if (setFadeColor(ev->data.fadeColor.from, ev->data.fadeColor.to, ev->data.fadeColor.time))
+                        if (setStaticColor(ev->data.staticColor.color))
                         {
-                            state = LCSTATE::IDLE;
-                            printf("fade success, clear ev\n");
                             ev.reset();
                         }
+                        break;
+                    case MsgType::FADE:
+                        if (setFadeColor(ev->data.fadeColor.from, ev->data.fadeColor.to, ev->data.fadeColor.time))
+                        {
+                            ev.reset();
+                        }
+                        break;
+                    case MsgType::PULSE:
+                        state = LCSTATE::PULSE;
                         break;
                     case MsgType::NONE:
                         break;
                 }
                 break;
-            case LCSTATE::ONE_SHOT:
-                if (setStaticColor(ev->data.staticColor.color))
+            case LCSTATE::PULSE:
+                if (setPulseColor(ev->data.fadeColor.from, ev->data.fadeColor.to, ev->data.fadeColor.time))
                 {
-                    state = LCSTATE::IDLE;
-                    ev.reset();
+                    printf("re-fade\n");
                 }
-                break;
-            case LCSTATE::REPEAT:
+                if (ev->type != MsgType::PULSE)
+                {
+                        state = LCSTATE::IDLE;
+                        ev.reset();
+                }
                 break;
             case LCSTATE::CLEAR:
                 if (setStaticColor(Color{"000000"}))
