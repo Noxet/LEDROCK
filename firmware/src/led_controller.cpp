@@ -1,4 +1,5 @@
 #include "led_controller.h"
+#include "FreeRTOSConfig.h"
 #include "message.h"
 #include "core/color.h"
 
@@ -12,6 +13,7 @@
 #include <cstdint>
 #include <cstring>
 #include <optional>
+#include <string>
 
 
 enum class LCSTATE
@@ -38,57 +40,77 @@ void LedController::init()
 void LedController::run()
 {
     LCSTATE state = LCSTATE::IDLE;
-    Event newEv;
-    std::optional<Event> ev;
+    std::optional<Event> current;
     while (1)
     {
-        // non-blocking check if there is new messages
-        if (xQueueReceive(m_queue, &newEv, 0) == pdPASS)
+        // fetch event if we are not currently handling one.
+        if (!current && state == LCSTATE::IDLE)
         {
-            ev = newEv;
-        }
-        else
-        {
-            memset(&newEv, 0, sizeof(Event));
-            newEv.type = MsgType::NONE;
+            Event tmp;
+            if (xQueueReceive(m_queue, &tmp, 0) == pdPASS)
+            {
+                current = std::move(tmp);
+            }
         }
 
         switch (state)
         {
             case LCSTATE::IDLE:
-                if (!ev) break;
-                switch(ev->type)
+            {
+                if (!current) break;
+
+                const auto &ev = current.value();
+                switch(ev.type)
                 {
                     case MsgType::STATIC:
-                        if (setStaticColor(ev->data.staticColor.color))
+                        if (setStaticColor(ev.data.staticColor.color))
                         {
-                            ev.reset();
+                            current.reset();
                         }
                         break;
+
                     case MsgType::FADE:
-                        if (setFadeColor(ev->data.fadeColor.from, ev->data.fadeColor.to, ev->data.fadeColor.time))
+                        if (setFadeColor(ev.data.fadeColor.from, ev.data.fadeColor.to, ev.data.fadeColor.time))
                         {
-                            ev.reset();
+                            current.reset();
                         }
                         break;
+
                     case MsgType::PULSE:
-                        state = LCSTATE::PULSE;
+                        if (setPulseColor(ev.data.fadeColor.from, ev.data.fadeColor.to, ev.data.fadeColor.time, true))
+                        {
+                            // do not reset current event here since we need its data in PULSE state.
+                            state = LCSTATE::PULSE;
+                            printf("state -> pulse\n");
+                        }
                         break;
+
                     case MsgType::NONE:
                         break;
                 }
-                break;
+            } break;
+
             case LCSTATE::PULSE:
-                if (setPulseColor(ev->data.fadeColor.from, ev->data.fadeColor.to, ev->data.fadeColor.time))
+            {
+                // we need a valid event while pulsing
+                configASSERT(current.has_value());
+                const auto &ev = current.value();
+
+                Event tmp;
+                if (xQueueReceive(m_queue, &tmp, 0) == pdPASS)
+                {
+                    // Preempt if a new state has arrived, so we don't have to wait for fading to finish.
+                    current = std::move(tmp);
+                    state = LCSTATE::IDLE;
+                    break;
+                }
+
+                if (setPulseColor(ev.data.fadeColor.from, ev.data.fadeColor.to, ev.data.fadeColor.time, false))
                 {
                     printf("re-fade\n");
                 }
-                if (ev->type != MsgType::PULSE)
-                {
-                        state = LCSTATE::IDLE;
-                        ev.reset();
-                }
-                break;
+            } break;
+
             case LCSTATE::CLEAR:
                 if (setStaticColor(Color{"000000"}))
                 {
@@ -117,15 +139,21 @@ bool LedController::setFadeColor(const Color &from, const Color &to, uint32_t ti
     // printf("[%lld] set fade\n", getUptime());
     setStaticColor(from);
     vTaskDelay(20 / portTICK_PERIOD_MS);
+    printf("fade: [%d, %d, %d] -> [%d, %d, %d]\n", from.rgb.r, from.rgb.g, from.rgb.b, to.rgb.r, to.rgb.g, to.rgb.b);
     bool ret = m_driver.setFadeColor(from, to, time);
     return ret;
     // printf("[%lld] fade done\n", getUptime());
 }
 
-bool LedController::setPulseColor(const Color &from, const Color &to, uint32_t time)
+bool LedController::setPulseColor(const Color &from, const Color &to, uint32_t time, bool reset)
 {
     static Color _from = from;
     static Color _to = to;
+    if (reset)
+    {
+        _from = from;
+        _to = to;
+    }
 
     bool ret = setFadeColor(_from, _to, time);
 
@@ -148,3 +176,21 @@ void LedController::ledControllerTask(void *pvParam)
     lc->run();
 }
 
+
+static std::string stateToString(const LCSTATE &state)
+{
+    switch (state)
+    {
+        case LCSTATE::IDLE: return "IDLE";
+        case LCSTATE::PULSE: return "PULSE";
+        case LCSTATE::CLEAR: return "CLEAR";
+    }
+
+    return "UNKNOWN STATE";
+}
+
+
+static void updateState(LCSTATE &state, const LCSTATE &newState)
+{
+    printf("[%s] -> [%s]\n", stateToString(state).c_str(), stateToString(newState).c_str());
+}

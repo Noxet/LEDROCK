@@ -19,7 +19,7 @@ extern "C" void app_main(void)
     UartCLI cli{lc.m_queue};
     // UartCLI uart(lc);
 
-    xTaskCreate(&LedController::ledControllerTask, "lc task", 3096, &lc, 10, nullptr);
+    xTaskCreate(&LedController::ledControllerTask, "lc task", 4096, &lc, 10, nullptr);
 
 
     while (1)

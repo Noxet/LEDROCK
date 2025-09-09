@@ -17,7 +17,7 @@ private:
     void run();
     bool setStaticColor(const Color &color);
     bool setFadeColor(const Color &from, const Color &to, uint32_t time);
-    bool setPulseColor(const Color &from, const Color &to, uint32_t time);
+    bool setPulseColor(const Color &from, const Color &to, uint32_t time, bool reset);
     bool setBlinkColor(const Color &color1, const Color &color2, uint32_t time);
 
 

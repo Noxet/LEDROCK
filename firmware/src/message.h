@@ -1,7 +1,6 @@
 #include "core/color.h"
 
 #include <cstdint>
-#include <variant>
 
 enum class MsgType : uint8_t
 {
