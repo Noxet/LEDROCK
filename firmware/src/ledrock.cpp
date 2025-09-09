@@ -1,9 +1,13 @@
+#include "core/log.h"
+#include "core/sys.h"
 #include "driver/gpio.h"
 #include "drivers/ledstrip.h"
-#include "hal/gpio_types.h"
 #include "led_controller.h"
 #include "uart_cli.h"
 
+#include "esp_log.h"
+#include "esp_log_level.h"
+#include "hal/gpio_types.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "portmacro.h"
@@ -18,6 +22,8 @@ extern "C" void app_main(void)
     lc.init();
     UartCLI cli{lc.m_queue};
     // UartCLI uart(lc);
+
+    ESP_LOGI(LRTAG, "testing");
 
     xTaskCreate(&LedController::ledControllerTask, "lc task", 4096, &lc, 10, nullptr);
 
