@@ -38,22 +38,54 @@ pub fn main() !void {
     if (res.args.help != 0)
         return printHelp();
 
-    const c = try parseColor(res.positionals[0][0]);
-    std.debug.print("color: {}\n", .{c});
-    var data = [_]u8{0} ** 5;
+    var data = [_]u8{0} ** 20;
+    var sendLen: u32 = 0;
     if (res.args.mode) |m| {
         switch (m) {
             .static => {
-                std.debug.print("STATIC\n", .{});
+                const c = try parseColor(res.positionals[0][0]);
                 // if (res.positionals[0].len > 1) {}
                 data[0] = '\x01';
                 data[1] = c.r;
                 data[2] = c.g;
                 data[3] = c.b;
                 data[4] = '\n';
+                sendLen = 5;
             },
-            .fade => {},
-            .pulse => {},
+            .fade => {
+                const cFrom = try parseColor(res.positionals[0][0]);
+                const cTo = try parseColor(res.positionals[0][1]);
+                data[0] = '\x02';
+                data[1] = cFrom.r;
+                data[2] = cFrom.g;
+                data[3] = cFrom.b;
+                data[4] = cTo.r;
+                data[5] = cTo.g;
+                data[6] = cTo.b;
+                data[7] = '\xB8';
+                data[8] = '\x0B';
+                data[9] = '\x00';
+                data[10] = '\x00';
+                data[11] = '\n';
+                sendLen = 12;
+            },
+            .pulse => {
+                const cFrom = try parseColor(res.positionals[0][0]);
+                const cTo = try parseColor(res.positionals[0][1]);
+                data[0] = '\x03';
+                data[1] = cFrom.r;
+                data[2] = cFrom.g;
+                data[3] = cFrom.b;
+                data[4] = cTo.r;
+                data[5] = cTo.g;
+                data[6] = cTo.b;
+                data[7] = '\xB8';
+                data[8] = '\x0B';
+                data[9] = '\x00';
+                data[10] = '\x00';
+                data[11] = '\n';
+                sendLen = 12;
+            },
         }
     } else {
         std.debug.print("Mode option not specified\n", .{});
@@ -72,7 +104,7 @@ pub fn main() !void {
     });
 
     var writer = serial.writer(&.{});
-    try writer.interface.writeAll(&data);
+    try writer.interface.writeAll(data[0..sendLen]);
     std.debug.print("Data written\n", .{});
 }
 
