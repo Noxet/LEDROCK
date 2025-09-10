@@ -23,8 +23,6 @@ extern "C" void app_main(void)
     UartCLI cli{lc.m_queue};
     // UartCLI uart(lc);
 
-    ESP_LOGI(LRTAG, "testing");
-
     xTaskCreate(&LedController::ledControllerTask, "lc task", 4096, &lc, 10, nullptr);
 
 

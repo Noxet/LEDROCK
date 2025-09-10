@@ -1,5 +1,6 @@
 #include "led_controller.h"
 #include "FreeRTOSConfig.h"
+#include "hal/sdio_slave_hal.h"
 #include "message.h"
 #include "core/color.h"
 
@@ -16,12 +17,18 @@
 #include <string>
 
 
+static const char *TAG = "LED_CTRL";
+
+
 enum class LCSTATE
 {
     IDLE,
     PULSE,
     CLEAR,
 };
+
+static void updateState(LCSTATE &state, const LCSTATE &newState);
+static constexpr const char *eventToString(const Event &ev);
 
 
 LedController::LedController(ILedDriver &driver)
@@ -50,6 +57,7 @@ void LedController::run()
             if (xQueueReceive(m_queue, &tmp, 0) == pdPASS)
             {
                 current = std::move(tmp);
+                if (current) ESP_LOGI(TAG, "Got new event: %s", eventToString(current.value()));
             }
         }
 
@@ -65,6 +73,7 @@ void LedController::run()
                     case MsgType::STATIC:
                         if (setStaticColor(ev.data.staticColor.color))
                         {
+                            ESP_LOGI(TAG, "Set staticcolor done");
                             current.reset();
                         }
                         break;
@@ -72,6 +81,7 @@ void LedController::run()
                     case MsgType::FADE:
                         if (setFadeColor(ev.data.fadeColor.from, ev.data.fadeColor.to, ev.data.fadeColor.time))
                         {
+                            ESP_LOGI(TAG, "Set fadecolor done");
                             current.reset();
                         }
                         break;
@@ -80,8 +90,8 @@ void LedController::run()
                         if (setPulseColor(ev.data.fadeColor.from, ev.data.fadeColor.to, ev.data.fadeColor.time, true))
                         {
                             // do not reset current event here since we need its data in PULSE state.
-                            state = LCSTATE::PULSE;
-                            printf("state -> pulse\n");
+                            ESP_LOGI(TAG, "Set pulsecolor done");
+                            updateState(state, LCSTATE::PULSE);
                         }
                         break;
 
@@ -101,20 +111,20 @@ void LedController::run()
                 {
                     // Preempt if a new state has arrived, so we don't have to wait for fading to finish.
                     current = std::move(tmp);
-                    state = LCSTATE::IDLE;
+                    if (current) ESP_LOGI(TAG, "Got new event: %s", eventToString(current.value()));
+                    updateState(state, LCSTATE::IDLE);
                     break;
                 }
 
                 if (setPulseColor(ev.data.fadeColor.from, ev.data.fadeColor.to, ev.data.fadeColor.time, false))
                 {
-                    printf("re-fade\n");
                 }
             } break;
 
             case LCSTATE::CLEAR:
                 if (setStaticColor(Color{"000000"}))
                 {
-                    state = LCSTATE::IDLE;
+                    updateState(state, LCSTATE::IDLE);
                 }
                 break;
         }
@@ -139,7 +149,6 @@ bool LedController::setFadeColor(const Color &from, const Color &to, uint32_t ti
     // printf("[%lld] set fade\n", getUptime());
     setStaticColor(from);
     vTaskDelay(20 / portTICK_PERIOD_MS);
-    printf("fade: [%d, %d, %d] -> [%d, %d, %d]\n", from.rgb.r, from.rgb.g, from.rgb.b, to.rgb.r, to.rgb.g, to.rgb.b);
     bool ret = m_driver.setFadeColor(from, to, time);
     return ret;
     // printf("[%lld] fade done\n", getUptime());
@@ -177,7 +186,7 @@ void LedController::ledControllerTask(void *pvParam)
 }
 
 
-static std::string stateToString(const LCSTATE &state)
+static constexpr const char *stateToString(const LCSTATE &state)
 {
     switch (state)
     {
@@ -190,7 +199,22 @@ static std::string stateToString(const LCSTATE &state)
 }
 
 
+static constexpr const char *eventToString(const Event &ev)
+{
+    switch (ev.type)
+    {
+        case MsgType::STATIC: return "STATIC";
+        case MsgType::FADE: return "FADE";
+        case MsgType::PULSE: return "PULSE";
+        case MsgType::NONE: return "NONE";
+    }
+
+    return "UNKNOWN EVENT";
+}
+
+
 static void updateState(LCSTATE &state, const LCSTATE &newState)
 {
-    printf("[%s] -> [%s]\n", stateToString(state).c_str(), stateToString(newState).c_str());
+    ESP_LOGI(TAG, "[%s]->[%s]", stateToString(state), stateToString(newState));
+    state = newState;
 }

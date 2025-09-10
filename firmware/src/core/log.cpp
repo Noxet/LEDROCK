@@ -20,7 +20,7 @@ LRLog::LRLog(uint8_t *buffer, size_t size, esp_log_level_t espLogLevel)
 	m_mtx = xSemaphoreCreateMutex();
 
 	// Let the ESP_LOGx call our own function
-	esp_log_level_set(LRTAG, ESP_LOG_INFO);
+	esp_log_level_set("*", ESP_LOG_INFO);
 	esp_log_set_vprintf(&LRLog::print);
 }
 

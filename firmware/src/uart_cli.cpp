@@ -1,13 +1,18 @@
 #include "uart_cli.h"
 #include "message.h"
-
 #include "core/color.h"
+
 #include "driver/usb_serial_jtag.h"
 #include "esp_err.h"
+#include "esp_log.h"
 #include "esp_intr_alloc.h"
 #include "freertos/idf_additions.h"
 #include "freertos/projdefs.h"
+
 #include <cstring>
+
+
+static const char *TAG = "UART";
 
 
 UartCLI::UartCLI(QueueHandle_t &lcQueue)
@@ -38,7 +43,7 @@ bool UartCLI::hasPacket()
  */
 void UartCLI::parse()
 {
-    printf("parse\n");
+    logPacket();
     // TODO: log failed posts to queue
     // if (m_bufferPos < 3) return;
     MsgType type = static_cast<MsgType>(read_u8_le());
@@ -72,10 +77,9 @@ void UartCLI::parse()
 
     if (xQueueSend(m_lcQueue, &e, 10) != pdPASS)
     {
-        printf("UART Failed to send data\n");
+        ESP_LOGW(TAG, "Failed to post to queue");
     }
-    printf("sent to queue\n");
-//     m_bufferToParse = false;
+
 }
 
 
@@ -84,7 +88,7 @@ void UartCLI::poll()
     // Wait for main thread to parse the latest data
     // if (m_bufferToParse) return;
 
-    int len = usb_serial_jtag_read_bytes(&m_buffer[m_bufferDataSize], sizeof(m_buffer) - 1, 20 / portTICK_PERIOD_MS);
+    int len = usb_serial_jtag_read_bytes(&m_buffer[m_bufferDataSize], 1, 20 / portTICK_PERIOD_MS);
     m_bufferDataSize += len;
     if (isLineEnding(m_buffer[m_bufferDataSize - 1]))
     {
@@ -123,4 +127,16 @@ uint32_t UartCLI::read_u32_le()
     val |= static_cast<uint32_t>(*m_bufferReadPos++) << 16;
     val |= static_cast<uint32_t>(*m_bufferReadPos++) << 24;
     return val;
+}
+
+void UartCLI::logPacket()
+{
+    char buf[2 * sizeof(m_buffer)];
+    int pos = 0;
+    for (int i = 0; i < m_bufferDataSize; i++)
+    {
+        pos += snprintf(&buf[pos], sizeof(buf), "%02X", m_buffer[i]);
+    }
+
+    ESP_LOGI(TAG, "RX packet: %s", buf);
 }

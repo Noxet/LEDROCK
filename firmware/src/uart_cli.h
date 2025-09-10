@@ -23,6 +23,7 @@ private:
     uint8_t read_u8_le();
     uint16_t read_u16_le();
     uint32_t read_u32_le();
+    void logPacket();
 
 
 private:
