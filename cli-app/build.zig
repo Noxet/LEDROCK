@@ -7,15 +7,13 @@ const std = @import("std");
 // build runner to parallelize the build automatically (and the cache system to
 // know when a step doesn't need to be re-run).
 pub fn build(b: *std.Build) void {
-    // const target = b.standardTargetOptions(.{});
-    // const optimize = b.standardOptimizeOption(.{});
+    const windows = b.option(bool, "windows", "Target Windows") orelse false;
 
     const exe = b.addExecutable(.{
         .name = "cli-app",
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("src/main.zig"),
-            .target = b.graph.host,
-        }),
+        .root_module = b.createModule(.{ .root_source_file = b.path("src/main.zig"), .target = b.resolveTargetQuery(.{
+            .os_tag = if (windows) .windows else .linux,
+        }) }),
     });
 
     const serial_dep = b.dependency("serial", .{});
