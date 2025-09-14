@@ -5,7 +5,13 @@ const clap = @import("clap");
 const params = clap.parseParamsComptime(
     \\-h, --help    Display this help and exit.
     \\-p, --port <str> The device port (defaults to /dev/ttyACM0).
-    \\-m, --mode <mode> Specify the mode
+    \\-m, --mode <mode> Specify the mode: static | fade | pulse
+    \\
+    \\                  static <color>
+    \\
+    \\                  fade <color from> <color to> <fade time>
+    \\
+    \\                  pulse <color from> <color to> <pulse time>
     \\<str>...
 );
 
@@ -55,9 +61,10 @@ pub fn main() !void {
                 sendLen = 5;
             },
             .fade => {
-                checkArgs(args, 2);
+                checkArgs(args, 3);
                 const cFrom = try parseColor(res.positionals[0][0]);
                 const cTo = try parseColor(res.positionals[0][1]);
+                const time = try parseTime(args[2]);
                 data[0] = '\x02';
                 data[1] = cFrom.r;
                 data[2] = cFrom.g;
@@ -65,17 +72,15 @@ pub fn main() !void {
                 data[4] = cTo.r;
                 data[5] = cTo.g;
                 data[6] = cTo.b;
-                data[7] = '\xB8';
-                data[8] = '\x0B';
-                data[9] = '\x00';
-                data[10] = '\x00';
+                std.mem.writeInt(u32, data[7..][0..4], time, .little);
                 data[11] = '\n';
                 sendLen = 12;
             },
             .pulse => {
-                checkArgs(args, 2);
+                checkArgs(args, 3);
                 const cFrom = try parseColor(res.positionals[0][0]);
                 const cTo = try parseColor(res.positionals[0][1]);
+                const time = try parseTime(args[2]);
                 data[0] = '\x03';
                 data[1] = cFrom.r;
                 data[2] = cFrom.g;
@@ -83,10 +88,7 @@ pub fn main() !void {
                 data[4] = cTo.r;
                 data[5] = cTo.g;
                 data[6] = cTo.b;
-                data[7] = '\xB8';
-                data[8] = '\x0B';
-                data[9] = '\x00';
-                data[10] = '\x00';
+                std.mem.writeInt(u32, data[7..][0..4], time, .little);
                 data[11] = '\n';
                 sendLen = 12;
             },
@@ -132,4 +134,9 @@ pub fn parseColor(st: []const u8) !Color {
     const b = try std.fmt.parseInt(u8, st[4..6], 16);
     const c: Color = .{ .r = r, .g = g, .b = b };
     return c;
+}
+
+pub fn parseTime(st: []const u8) !u32 {
+    const t = try std.fmt.parseInt(u32, st, 10);
+    return t;
 }
