@@ -41,8 +41,10 @@ pub fn main() !void {
     var data = [_]u8{0} ** 20;
     var sendLen: u32 = 0;
     if (res.args.mode) |m| {
+        const args = res.positionals[0];
         switch (m) {
             .static => {
+                checkArgs(args, 1);
                 const c = try parseColor(res.positionals[0][0]);
                 // if (res.positionals[0].len > 1) {}
                 data[0] = '\x01';
@@ -53,6 +55,7 @@ pub fn main() !void {
                 sendLen = 5;
             },
             .fade => {
+                checkArgs(args, 2);
                 const cFrom = try parseColor(res.positionals[0][0]);
                 const cTo = try parseColor(res.positionals[0][1]);
                 data[0] = '\x02';
@@ -70,6 +73,7 @@ pub fn main() !void {
                 sendLen = 12;
             },
             .pulse => {
+                checkArgs(args, 2);
                 const cFrom = try parseColor(res.positionals[0][0]);
                 const cTo = try parseColor(res.positionals[0][1]);
                 data[0] = '\x03';
@@ -89,10 +93,14 @@ pub fn main() !void {
         }
     } else {
         std.debug.print("Mode option not specified\n", .{});
+        std.process.exit(1);
     }
 
     const port = res.args.port orelse "/dev/ttyACM0";
-    var serial = try std.fs.cwd().openFile(port, .{ .mode = .read_write });
+    var serial = std.fs.cwd().openFile(port, .{ .mode = .read_write }) catch |err| {
+        std.debug.print("Failed to open device: {}\n", .{err});
+        return;
+    };
     defer serial.close();
 
     try zig_serial.configureSerialPort(serial, zig_serial.SerialConfig{
@@ -105,11 +113,17 @@ pub fn main() !void {
 
     var writer = serial.writer(&.{});
     try writer.interface.writeAll(data[0..sendLen]);
-    std.debug.print("Data written\n", .{});
 }
 
 pub fn printHelp() !void {
     return clap.helpToFile(.stderr(), clap.Help, &params, .{});
+}
+
+pub fn checkArgs(pos: []const []const u8, len: usize) void {
+    if (pos.len < len) {
+        std.debug.print("Not enough arguments\n", .{});
+        std.process.exit(1);
+    }
 }
 
 pub fn parseColor(st: []const u8) !Color {
