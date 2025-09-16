@@ -2,4 +2,5 @@
 
 #include <cstdint>
 
-uint64_t getUptime();
+void sys_init();
+uint64_t sys_getUptime();

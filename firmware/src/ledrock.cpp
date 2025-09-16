@@ -4,6 +4,7 @@
 #include "drivers/ledstrip.h"
 #include "led_controller.h"
 #include "uart_cli.h"
+#include "wifi.h"
 
 #include "esp_log.h"
 #include "esp_log_level.h"
@@ -17,6 +18,9 @@
 
 extern "C" void app_main(void)
 {
+    sys_init();
+    wifi_init();
+
     Ledstrip leds;
     LedController lc{leds};
     lc.init();
