@@ -4,7 +4,7 @@
 #include "drivers/ledstrip.h"
 #include "led_controller.h"
 #include "uart_cli.h"
-#include "wifi.h"
+#include "http_server.cpp"
 
 #include "esp_log.h"
 #include "esp_log_level.h"
@@ -19,7 +19,7 @@
 extern "C" void app_main(void)
 {
     sys_init();
-    wifi_init();
+    init();
 
     Ledstrip leds;
     LedController lc{leds};
