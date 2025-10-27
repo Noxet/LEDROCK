@@ -1,0 +1,10 @@
+# This file was generated using idf.py save-defconfig. It can be edited manually.
+# Espressif IoT Development Framework (ESP-IDF) 5.4.1 Project Minimal Configuration
+#
+CONFIG_IDF_TARGET="esp32c6"
+CONFIG_ESP_WIFI_SSID="ssid"
+CONFIG_ESP_WIFI_PASSWORD="pass"
+CONFIG_EXAMPLE_WIFI_SSID="ssid"
+CONFIG_EXAMPLE_WIFI_PASSWORD="pass"
+CONFIG_COMPILER_STATIC_ANALYZER=y
+CONFIG_HTTPD_WS_SUPPORT=y
