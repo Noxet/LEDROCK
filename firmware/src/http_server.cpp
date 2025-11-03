@@ -16,9 +16,15 @@
 #include <sys/param.h>
 #include "esp_netif.h"
 #include "esp_eth.h"
+#include "esp_timer.h"
+#include "freertos/idf_additions.h"
 #include "protocol_examples_common.h"
+#include "protocol_examples_utils.h"
 
 #include <esp_http_server.h>
+
+static int client_fd;
+static httpd_handle_t server = NULL;
 
 /* A simple example that demonstrates using websocket echo server
  */
@@ -68,13 +74,62 @@ static esp_err_t trigger_async_send(httpd_handle_t handle, httpd_req_t *req)
     return ret;
 }
 
+static esp_err_t echo_handler(httpd_req_t *req)
+{
+    if (req->method == HTTP_GET)
+    {
+        ESP_LOGI(TAG, "Got GET req");
+    }
+
+    char *buf;
+    size_t bufLen = httpd_req_get_hdr_value_len(req, "Host") + 1;
+    if (bufLen > 1)
+    {
+        buf = (char *) malloc(bufLen);
+        assert(buf);
+        ESP_LOGI(TAG, "Allocated %zu bytes for header", bufLen);
+        if (httpd_req_get_hdr_value_str(req, "Host", buf, bufLen) == ESP_OK)
+        {
+            ESP_LOGI(TAG, "Got header -> Host: %s", buf);
+        }
+        free(buf);
+    }
+
+    bufLen = httpd_req_get_url_query_len(req) + 1;
+    char decParam[1024]{};
+    if (bufLen > 0)
+    {
+        buf = (char *) malloc(bufLen);
+        assert(buf);
+        if (httpd_req_get_url_query_str(req, buf, bufLen) == ESP_OK)
+        {
+            char param[1024];
+
+            if (httpd_query_key_value(buf, "msg", param, sizeof(param)) == ESP_OK)
+            {
+                ESP_LOGI(TAG, "Got query -> msg: %s", param);
+                example_uri_decode(decParam, param, strnlen(param, 1024));
+                ESP_LOGI(TAG, "Decoded -> msg: %s", decParam);
+            }
+        }
+        free(buf);
+    }
+
+    httpd_resp_set_hdr(req, "Resp", "Ledrock");
+
+    httpd_resp_send(req, decParam, HTTPD_RESP_USE_STRLEN);
+
+    return ESP_OK;
+}
+
 /*
  * This handler echos back the received ws data
  * and triggers an async send if certain message received
  */
-static esp_err_t echo_handler(httpd_req_t *req)
+static esp_err_t ws_handler(httpd_req_t *req)
 {
     if (req->method == HTTP_GET) {
+        client_fd = httpd_req_to_sockfd(req);
         ESP_LOGI(TAG, "Handshake done, the new connection was opened");
         return ESP_OK;
     }
@@ -124,15 +179,22 @@ static esp_err_t echo_handler(httpd_req_t *req)
 static const httpd_uri_t ws = {
         .uri        = "/ws",
         .method     = HTTP_GET,
-        .handler    = echo_handler,
+        .handler    = ws_handler,
         .user_ctx   = NULL,
         .is_websocket = true
+};
+
+static const httpd_uri_t echo = {
+    .uri = "/echo",
+    .method = HTTP_GET,
+    .handler = echo_handler,
+    .user_ctx = nullptr,
+    .is_websocket = false,
 };
 
 
 static httpd_handle_t start_webserver(void)
 {
-    httpd_handle_t server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
 
     // Start the httpd server
@@ -141,6 +203,7 @@ static httpd_handle_t start_webserver(void)
         // Registering the ws handler
         ESP_LOGI(TAG, "Registering URI handlers");
         httpd_register_uri_handler(server, &ws);
+        httpd_register_uri_handler(server, &echo);
         return server;
     }
 
@@ -179,6 +242,27 @@ static void connect_handler(void* arg, esp_event_base_t event_base,
 }
 
 
+static void log_task(void *arg)
+{
+    (void) arg;
+
+    while(1)
+    {
+        int64_t time = esp_timer_get_time();
+        uint8_t resp[128]{};
+        int len = snprintf((char *)resp, sizeof(resp), "uptime: %lld", time);
+        httpd_ws_frame_t ws_pkt;
+        memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
+        ws_pkt.type = HTTPD_WS_TYPE_TEXT;
+        ws_pkt.len = len;
+        ws_pkt.payload = resp;
+
+        int ret = httpd_ws_send_frame_async(server, client_fd, &ws_pkt);
+
+        vTaskDelay(500);
+    }
+}
+
 void init(void)
 {
     static httpd_handle_t server = NULL;
@@ -202,4 +286,6 @@ void init(void)
 
     /* Start the server for the first time */
     server = start_webserver();
+
+    xTaskCreate(log_task, "ws_logs", 4096, nullptr, 5, nullptr);
 }
