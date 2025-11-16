@@ -1,12 +1,4 @@
-
-/* WebSocket Echo Server Example
-
-   This example code is in the Public Domain (or CC0 licensed, at your option.)
-
-   Unless required by applicable law or agreed to in writing, this
-   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY KIND, either express or implied.
-*/
+#include "http_server.h"
 
 #include <esp_wifi.h>
 #include <esp_event.h>
@@ -22,10 +14,20 @@
 #include "protocol_examples_utils.h"
 
 #include <esp_http_server.h>
+#include <vector>
 
-static int client_fd;
+#define MAX_CLIENT_FAILED 5
+
+struct client
+{
+    int fd;
+    int failedAttempts;
+};
+
 static httpd_handle_t server = NULL;
+static std::vector<struct client> g_clients;
 
+QueueHandle_t httpQueue;
 /* A simple example that demonstrates using websocket echo server
  */
 static const char *TAG = "ws_echo_server";
@@ -39,6 +41,7 @@ struct async_resp_arg {
     httpd_handle_t hd;
     int fd;
 };
+
 
 /*
  * async send function, which we put into the httpd work queue
@@ -129,10 +132,12 @@ static esp_err_t echo_handler(httpd_req_t *req)
 static esp_err_t ws_handler(httpd_req_t *req)
 {
     if (req->method == HTTP_GET) {
-        client_fd = httpd_req_to_sockfd(req);
+        int client_fd = httpd_req_to_sockfd(req);
+        g_clients.push_back({.fd = client_fd, .failedAttempts = 0});
         ESP_LOGI(TAG, "Handshake done, the new connection was opened");
         return ESP_OK;
     }
+    ESP_LOGI(TAG, "request method: %d", req->method);
     httpd_ws_frame_t ws_pkt;
     uint8_t *buf = NULL;
     memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
@@ -257,8 +262,25 @@ static void log_task(void *arg)
         ws_pkt.len = len;
         ws_pkt.payload = resp;
 
-        int ret = httpd_ws_send_frame_async(server, client_fd, &ws_pkt);
+        for (auto it = g_clients.begin(); it != g_clients.end();)
+        {
+            int ret = httpd_ws_send_frame_async(server, it->fd, &ws_pkt);
+            if (ret != ESP_OK)
+            {
+                ESP_LOGI(TAG, "Failed to send log to client fd: %d", it->fd);
+                it->failedAttempts++;
+            }
 
+            if (it->failedAttempts >= MAX_CLIENT_FAILED)
+            {
+                // Client probably disconnected, remove them from the list
+                it = g_clients.erase(it);
+            }
+            else
+            {
+                ++it;
+            }
+        }
         vTaskDelay(500);
     }
 }
@@ -266,6 +288,7 @@ static void log_task(void *arg)
 void init(void)
 {
     static httpd_handle_t server = NULL;
+    httpQueue = xQueueCreate(20, sizeof(char *));
 
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_netif_init());
