@@ -1,10 +1,10 @@
 #include "led_controller.h"
-#include "FreeRTOSConfig.h"
-#include "hal/sdio_slave_hal.h"
+#include "core/log.h"
+#include "core/sys.h"
 #include "message.h"
 #include "core/color.h"
 
-#include "core/sys.h"
+#include "FreeRTOSConfig.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/idf_additions.h"
@@ -57,7 +57,7 @@ void LedController::run()
             if (xQueueReceive(m_queue, &tmp, 0) == pdPASS)
             {
                 current = std::move(tmp);
-                if (current) ESP_LOGI(TAG, "Got new event: %s", eventToString(current.value()));
+                if (current) LRLOGI("Got new event: %s\n", eventToString(current.value()));
             }
         }
 
@@ -74,6 +74,7 @@ void LedController::run()
                         if (setStaticColor(ev.data.staticColor.color))
                         {
                             ESP_LOGI(TAG, "Set staticcolor done");
+                            LRLOGI("SET STATIC DONE\n");
                             current.reset();
                         }
                         break;

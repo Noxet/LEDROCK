@@ -2,9 +2,11 @@
 #include "core/sys.h"
 #include "driver/gpio.h"
 #include "drivers/ledstrip.h"
+#include "http_server.h"
 #include "led_controller.h"
 #include "uart_cli.h"
 #include "http_server.cpp"
+#include "core/log.h"
 
 #include "esp_log.h"
 #include "esp_log_level.h"
@@ -20,6 +22,10 @@ extern "C" void app_main(void)
 {
     sys_init();
     init();
+    assert(httpQueue != nullptr);
+    LRLog::instance().init(httpQueue);
+
+    LRLOGI("Booting up, post HTTP and LRLog init\n");
 
     Ledstrip leds;
     LedController lc{leds};

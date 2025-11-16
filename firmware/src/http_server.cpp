@@ -10,11 +10,13 @@
 #include "esp_eth.h"
 #include "esp_timer.h"
 #include "freertos/idf_additions.h"
+#include "portmacro.h"
 #include "protocol_examples_common.h"
 #include "protocol_examples_utils.h"
 
 #include <esp_http_server.h>
 #include <vector>
+#include <string>
 
 #define MAX_CLIENT_FAILED 5
 
@@ -27,7 +29,7 @@ struct client
 static httpd_handle_t server = NULL;
 static std::vector<struct client> g_clients;
 
-QueueHandle_t httpQueue;
+QueueHandle_t httpQueue = nullptr;
 /* A simple example that demonstrates using websocket echo server
  */
 static const char *TAG = "ws_echo_server";
@@ -251,16 +253,16 @@ static void log_task(void *arg)
 {
     (void) arg;
 
+    char *msg = nullptr;
     while(1)
     {
-        int64_t time = esp_timer_get_time();
-        uint8_t resp[128]{};
-        int len = snprintf((char *)resp, sizeof(resp), "uptime: %lld", time);
+        // Blocking call, wait for message to log
+        xQueueReceive(httpQueue, &msg, portMAX_DELAY);
         httpd_ws_frame_t ws_pkt;
         memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
         ws_pkt.type = HTTPD_WS_TYPE_TEXT;
-        ws_pkt.len = len;
-        ws_pkt.payload = resp;
+        ws_pkt.len = strlen(msg);
+        ws_pkt.payload = (uint8_t *) msg;
 
         for (auto it = g_clients.begin(); it != g_clients.end();)
         {

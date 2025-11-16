@@ -1,5 +1,6 @@
 #include "log.h"
 #include "core/sys.h"
+#include "http_server.h"
 
 #include "esp_log.h"
 #include "esp_log_level.h"
@@ -11,59 +12,41 @@
 // so we use a little less than the full 16kiB.
 RTC_DATA_ATTR static uint8_t s_ringBuffer[16000];
 
-static LRLog s_lrLog(s_ringBuffer, sizeof(s_ringBuffer), ESP_LOG_INFO);
 
-
-LRLog::LRLog(uint8_t *buffer, size_t size, esp_log_level_t espLogLevel)
-	: m_buffer{buffer}, m_capacity{size}, m_head{0}, m_len{0}
+LRLog &LRLog::instance()
 {
-	m_mtx = xSemaphoreCreateMutex();
-
-	// Let the ESP_LOGx call our own function
-	esp_log_level_set("*", ESP_LOG_INFO);
-	esp_log_set_vprintf(&LRLog::print);
+	static LRLog log;
+	return log;
 }
 
 
-void LRLog::write(const uint8_t *data, size_t len)
+void LRLog::init(QueueHandle_t httpQueue)
 {
+	printf("INIT this=%p\n", this);
+	m_httpQueue = httpQueue;
+}
+
+
+void LRLog::log(esp_log_level_t level, const char *tag, const char *fmt, ...)
+{
+	printf("LOG this=%p, httpQueue=%p\n", this, m_httpQueue);
+	char msg[256];
+
+	va_list ap;
+	va_start(ap, fmt);
+	int len = vsnprintf(msg, sizeof(msg), fmt, ap);
+	va_end(ap);
+
 	if (!len) return;
-	
-	LRLock _{m_mtx};
-	if (len >= m_capacity)
+	// if test got truncated, adjust len accordingly
+	if (len >= sizeof(msg)) len = sizeof(msg) - 1;
+
+	esp_log_write(level, tag, "%s\n", msg);
+
+	if (m_httpQueue)
 	{
-		// only write the tail part of the message
-		std::memcpy(m_buffer, data + (len - m_capacity), m_capacity);
-		m_head = 0;
-		m_len = m_capacity;
-		return;
+		char *copy = static_cast<char *>(malloc(len + 1));
+		memcpy(copy, msg, len + 1);
+		xQueueSendToBack(m_httpQueue, &copy, 0);
 	}
-}
-
-
-/*
- * Gets called by ESP_LOGx functions.
- * Prints to both UART and logs it in the ring buffer for WiFi.
- */
-int LRLog::print(const char *fmt, va_list ap)
-{
-	va_list apUart;
-	va_copy(apUart, ap);
-	int uartLen = vprintf(fmt, apUart);
-	va_end(apUart);
-
-	va_list  apWifi;
-	va_copy(apWifi, ap);
-	char tmp[256];
-	int wifiLen = vsnprintf(tmp, sizeof(tmp), fmt, apWifi);
-	if (wifiLen > 0)
-	{
-		// check if print was truncated
-		int toWrite = wifiLen >= sizeof(tmp) ? sizeof(tmp) : wifiLen;
-		// the safe way to cast this. This will catch unexpected changes to the data type for tmp.
-		s_lrLog.write(reinterpret_cast<uint8_t *>(static_cast<char *>(tmp)), toWrite);
-	}
-	
-
-	return uartLen;
 }
