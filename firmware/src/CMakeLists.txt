@@ -8,4 +8,6 @@ idf_component_register(SRCS
         "core/log.cpp"
         "drivers/ledstrip.cpp"
         PRIV_REQUIRES spi_flash esp_driver_gpio esp_driver_ledc esp_driver_usb_serial_jtag esp_timer nvs_flash esp_http_server esp_wifi esp_eth
-        INCLUDE_DIRS ".")
+        INCLUDE_DIRS "."
+        EMBED_FILES ${CMAKE_BINARY_DIR}/index.html.gz
+)

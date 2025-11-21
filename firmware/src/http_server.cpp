@@ -18,6 +18,11 @@
 #include <vector>
 #include <string>
 
+
+extern const uint8_t index_html_gz_start[] asm("_binary_index_html_gz_start");
+extern const uint8_t index_html_gz_end[] asm("_binary_index_html_gz_end");
+static size_t index_html_gz_len = index_html_gz_end - index_html_gz_start;
+
 #define MAX_CLIENT_FAILED 5
 
 struct client
@@ -79,7 +84,7 @@ static esp_err_t trigger_async_send(httpd_handle_t handle, httpd_req_t *req)
     return ret;
 }
 
-static esp_err_t echo_handler(httpd_req_t *req)
+static esp_err_t startPageHandler(httpd_req_t *req)
 {
     if (req->method == HTTP_GET)
     {
@@ -120,9 +125,10 @@ static esp_err_t echo_handler(httpd_req_t *req)
         free(buf);
     }
 
-    httpd_resp_set_hdr(req, "Resp", "Ledrock");
+    httpd_resp_set_type(req, "text/html");
+    httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
 
-    httpd_resp_send(req, decParam, HTTPD_RESP_USE_STRLEN);
+    httpd_resp_send(req, (const char *) index_html_gz_start, index_html_gz_len);
 
     return ESP_OK;
 }
@@ -191,10 +197,10 @@ static const httpd_uri_t ws = {
         .is_websocket = true
 };
 
-static const httpd_uri_t echo = {
-    .uri = "/echo",
+static const httpd_uri_t startPage = {
+    .uri = "/",
     .method = HTTP_GET,
-    .handler = echo_handler,
+    .handler = startPageHandler,
     .user_ctx = nullptr,
     .is_websocket = false,
 };
@@ -210,7 +216,7 @@ static httpd_handle_t start_webserver(void)
         // Registering the ws handler
         ESP_LOGI(TAG, "Registering URI handlers");
         httpd_register_uri_handler(server, &ws);
-        httpd_register_uri_handler(server, &echo);
+        httpd_register_uri_handler(server, &startPage);
         return server;
     }
 
