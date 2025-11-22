@@ -183,6 +183,7 @@ void LedController::ledControllerTask(void *pvParam)
     // TODO: Add logging over wifi, and abort
     assert(pvParam);
     LedController *lc = static_cast<LedController *>(pvParam);
+    lc->init();
     lc->run();
 }
 

@@ -21,20 +21,19 @@
 extern "C" void app_main(void)
 {
     sys_init();
-    init();
-    assert(httpQueue != nullptr);
-    LRLog::instance().init(httpQueue);
 
     LRLOGI("Booting up, post HTTP and LRLog init\n");
 
     Ledstrip leds;
     LedController lc{leds};
-    lc.init();
-    UartCLI cli{lc.m_queue};
-    // UartCLI uart(lc);
-
     xTaskCreate(&LedController::ledControllerTask, "lc task", 4096, &lc, 10, nullptr);
 
+    UartCLI cli{lc.m_queue};
+
+    HTTPServer httpServer{lc.m_queue}; // TODO(noxet): refactor to call getQueue instead
+    xTaskCreate(&HTTPServer::httpServerTask, "http task", 4096, &httpServer, 5, nullptr);
+
+    LRLog::instance().init(httpServer.getQueue());
 
     while (1)
     {

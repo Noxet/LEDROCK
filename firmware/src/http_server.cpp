@@ -6,6 +6,7 @@
 #include <esp_system.h>
 #include <nvs_flash.h>
 #include <sys/param.h>
+#include "core/log.h"
 #include "esp_netif.h"
 #include "esp_eth.h"
 #include "esp_timer.h"
@@ -19,6 +20,13 @@
 #include <string>
 
 
+static void disconnect_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
+static void connect_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
+static esp_err_t startPageHandler(httpd_req_t *req);
+static esp_err_t ws_handler(httpd_req_t *req);
+
+
+// Embedded zipped html file
 extern const uint8_t index_html_gz_start[] asm("_binary_index_html_gz_start");
 extern const uint8_t index_html_gz_end[] asm("_binary_index_html_gz_end");
 static size_t index_html_gz_len = index_html_gz_end - index_html_gz_start;
@@ -31,10 +39,8 @@ struct client
     int failedAttempts;
 };
 
-static httpd_handle_t server = NULL;
 static std::vector<struct client> g_clients;
 
-QueueHandle_t httpQueue = nullptr;
 /* A simple example that demonstrates using websocket echo server
  */
 static const char *TAG = "ws_echo_server";
@@ -48,6 +54,139 @@ struct async_resp_arg {
     httpd_handle_t hd;
     int fd;
 };
+
+
+HTTPServer::HTTPServer(QueueHandle_t &lcQueue)
+    : m_lcQueue(lcQueue)
+{
+    m_httpQueue = xQueueCreate(20, sizeof(char *));
+}
+
+
+void HTTPServer::init()
+{
+    ESP_ERROR_CHECK(nvs_flash_init());
+    ESP_ERROR_CHECK(esp_netif_init());
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
+
+    /* This helper function configures Wi-Fi or Ethernet, as selected in menuconfig.
+     * Read "Establishing Wi-Fi or Ethernet Connection" section in
+     * examples/protocols/README.md for more information about this function.
+     */
+    ESP_ERROR_CHECK(example_connect());
+
+    /* Register event handlers to stop the server when Wi-Fi or Ethernet is disconnected,
+     * and re-start it upon connection.
+     */
+    ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &connect_handler, this));
+    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, &disconnect_handler, this));
+
+    /* Start the server for the first time */
+    startWebserver();
+}
+
+
+void HTTPServer::run()
+{
+    // TODO(noxet): free ptr?
+    char *msg = nullptr;
+    while(1)
+    {
+        // Blocking call, wait for message to log
+        xQueueReceive(m_httpQueue, &msg, portMAX_DELAY);
+        httpd_ws_frame_t ws_pkt;
+        memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
+        ws_pkt.type = HTTPD_WS_TYPE_TEXT;
+        ws_pkt.len = strlen(msg);
+        ws_pkt.payload = (uint8_t *) msg;
+
+        for (auto it = g_clients.begin(); it != g_clients.end();)
+        {
+            int ret = httpd_ws_send_frame_async(m_server, it->fd, &ws_pkt);
+            if (ret != ESP_OK)
+            {
+                ESP_LOGI(TAG, "Failed to send log to client fd: %d", it->fd);
+                it->failedAttempts++;
+            }
+
+            if (it->failedAttempts >= MAX_CLIENT_FAILED)
+            {
+                // Client probably disconnected, remove them from the list
+                it = g_clients.erase(it);
+            }
+            else
+            {
+                ++it;
+            }
+        }
+        vTaskDelay(500);
+    }
+}
+
+
+httpd_handle_t HTTPServer::getServer()
+{
+    return m_server;
+}
+
+
+QueueHandle_t HTTPServer::getQueue()
+{
+    return m_httpQueue;
+}
+
+
+void HTTPServer::startWebserver(void)
+{
+    const httpd_uri_t ws = {
+        .uri        = "/ws",
+        .method     = HTTP_GET,
+        .handler    = ws_handler,
+        .user_ctx   = NULL,
+        .is_websocket = true,
+        .handle_ws_control_frames = false,
+        .supported_subprotocol = nullptr,
+    };
+
+    const httpd_uri_t startPage = {
+        .uri = "/",
+        .method = HTTP_GET,
+        .handler = startPageHandler,
+        .user_ctx = nullptr,
+        .is_websocket = false,
+        .handle_ws_control_frames = false,
+        .supported_subprotocol = nullptr,
+    };
+
+    httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+
+    // Start the httpd server
+    ESP_LOGI(TAG, "Starting server on port: '%d'", config.server_port);
+    if (httpd_start(&m_server, &config) == ESP_OK) {
+        // Registering the ws handler
+        ESP_LOGI(TAG, "Registering URI handlers");
+        httpd_register_uri_handler(m_server, &ws);
+        httpd_register_uri_handler(m_server, &startPage);
+    }
+
+    ESP_LOGI(TAG, "Error starting server!");
+}
+
+
+void HTTPServer::stopWebserver()
+{
+    if (!m_server) return;
+
+    esp_err_t res = httpd_stop(m_server);
+    if (res == ESP_OK)
+    {
+        LRLOGI("HTTP Server stopped");
+    }
+    else
+    {
+        LRLOGI("Failed to stop HTTP Server");
+    }
+}
 
 
 /*
@@ -189,134 +328,33 @@ static esp_err_t ws_handler(httpd_req_t *req)
     return ret;
 }
 
-static const httpd_uri_t ws = {
-        .uri        = "/ws",
-        .method     = HTTP_GET,
-        .handler    = ws_handler,
-        .user_ctx   = NULL,
-        .is_websocket = true
-};
-
-static const httpd_uri_t startPage = {
-    .uri = "/",
-    .method = HTTP_GET,
-    .handler = startPageHandler,
-    .user_ctx = nullptr,
-    .is_websocket = false,
-};
 
 
-static httpd_handle_t start_webserver(void)
-{
-    httpd_config_t config = HTTPD_DEFAULT_CONFIG();
 
-    // Start the httpd server
-    ESP_LOGI(TAG, "Starting server on port: '%d'", config.server_port);
-    if (httpd_start(&server, &config) == ESP_OK) {
-        // Registering the ws handler
-        ESP_LOGI(TAG, "Registering URI handlers");
-        httpd_register_uri_handler(server, &ws);
-        httpd_register_uri_handler(server, &startPage);
-        return server;
-    }
-
-    ESP_LOGI(TAG, "Error starting server!");
-    return NULL;
-}
-
-static esp_err_t stop_webserver(httpd_handle_t server)
-{
-    // Stop the httpd server
-    return httpd_stop(server);
-}
 
 static void disconnect_handler(void* arg, esp_event_base_t event_base,
                                int32_t event_id, void* event_data)
 {
-    httpd_handle_t* server = (httpd_handle_t*) arg;
-    if (*server) {
-        ESP_LOGI(TAG, "Stopping webserver");
-        if (stop_webserver(*server) == ESP_OK) {
-            *server = NULL;
-        } else {
-            ESP_LOGE(TAG, "Failed to stop http server");
-        }
-    }
+    HTTPServer *http = static_cast<HTTPServer *>(arg);
+    http->stopWebserver();
 }
+
 
 static void connect_handler(void* arg, esp_event_base_t event_base,
                             int32_t event_id, void* event_data)
 {
-    httpd_handle_t* server = (httpd_handle_t*) arg;
-    if (*server == NULL) {
+    HTTPServer *http = static_cast<HTTPServer *>(arg);
+    if (http->getServer() == nullptr) {
         ESP_LOGI(TAG, "Starting webserver");
-        *server = start_webserver();
+        http->startWebserver();
     }
 }
 
 
-static void log_task(void *arg)
+void HTTPServer::httpServerTask(void *pvParam)
 {
-    (void) arg;
-
-    char *msg = nullptr;
-    while(1)
-    {
-        // Blocking call, wait for message to log
-        xQueueReceive(httpQueue, &msg, portMAX_DELAY);
-        httpd_ws_frame_t ws_pkt;
-        memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
-        ws_pkt.type = HTTPD_WS_TYPE_TEXT;
-        ws_pkt.len = strlen(msg);
-        ws_pkt.payload = (uint8_t *) msg;
-
-        for (auto it = g_clients.begin(); it != g_clients.end();)
-        {
-            int ret = httpd_ws_send_frame_async(server, it->fd, &ws_pkt);
-            if (ret != ESP_OK)
-            {
-                ESP_LOGI(TAG, "Failed to send log to client fd: %d", it->fd);
-                it->failedAttempts++;
-            }
-
-            if (it->failedAttempts >= MAX_CLIENT_FAILED)
-            {
-                // Client probably disconnected, remove them from the list
-                it = g_clients.erase(it);
-            }
-            else
-            {
-                ++it;
-            }
-        }
-        vTaskDelay(500);
-    }
-}
-
-void init(void)
-{
-    static httpd_handle_t server = NULL;
-    httpQueue = xQueueCreate(20, sizeof(char *));
-
-    ESP_ERROR_CHECK(nvs_flash_init());
-    ESP_ERROR_CHECK(esp_netif_init());
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
-
-    /* This helper function configures Wi-Fi or Ethernet, as selected in menuconfig.
-     * Read "Establishing Wi-Fi or Ethernet Connection" section in
-     * examples/protocols/README.md for more information about this function.
-     */
-    ESP_ERROR_CHECK(example_connect());
-
-    /* Register event handlers to stop the server when Wi-Fi or Ethernet is disconnected,
-     * and re-start it upon connection.
-     */
-    ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &connect_handler, &server));
-    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, &disconnect_handler, &server));
-
-
-    /* Start the server for the first time */
-    server = start_webserver();
-
-    xTaskCreate(log_task, "ws_logs", 4096, nullptr, 5, nullptr);
+    assert(pvParam);
+    HTTPServer *hs = static_cast<HTTPServer *>(pvParam);
+    hs->init();
+    hs->run();
 }

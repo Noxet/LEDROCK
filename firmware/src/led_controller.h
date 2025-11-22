@@ -8,12 +8,11 @@ class LedController
 public:
     LedController(ILedDriver &driver);
 
-    void init();
-
     // Need to be static (or non-class func) to be passed to xTaskCreate
     static void ledControllerTask(void *pvParam);
 
 private:
+    void init();
     void run();
     bool setStaticColor(const Color &color);
     bool setFadeColor(const Color &from, const Color &to, uint32_t time);
