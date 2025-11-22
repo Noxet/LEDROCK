@@ -56,7 +56,7 @@ struct async_resp_arg {
 };
 
 
-HTTPServer::HTTPServer(QueueHandle_t &lcQueue)
+HTTPServer::HTTPServer(QueueHandle_t lcQueue)
     : m_lcQueue(lcQueue)
 {
     m_httpQueue = xQueueCreate(20, sizeof(char *));

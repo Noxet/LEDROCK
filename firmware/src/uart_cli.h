@@ -7,7 +7,7 @@
 class UartCLI
 {
 public:
-    UartCLI(QueueHandle_t &lcQueue);
+    UartCLI(QueueHandle_t lcQueue);
 
     void poll();
     bool hasPacket();
@@ -27,7 +27,7 @@ private:
 
 
 private:
-    QueueHandle_t &m_lcQueue;
+    QueueHandle_t m_lcQueue;
 
     uint8_t m_buffer[256];
     uint8_t m_bufferDataSize;

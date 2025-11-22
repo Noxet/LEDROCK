@@ -7,7 +7,7 @@
 class HTTPServer
 {
 public:
-	HTTPServer(QueueHandle_t &lcQueue);
+	HTTPServer(QueueHandle_t lcQueue);
 	static void httpServerTask(void *pvParam);
 
 	void startWebserver();
@@ -22,5 +22,5 @@ private:
 	QueueHandle_t m_httpQueue;
 	httpd_handle_t m_server;
 
-	QueueHandle_t &m_lcQueue; // ref to the LedController event queue
+	QueueHandle_t m_lcQueue; // ref to the LedController event queue
 };

@@ -15,7 +15,7 @@
 static const char *TAG = "UART";
 
 
-UartCLI::UartCLI(QueueHandle_t &lcQueue)
+UartCLI::UartCLI(QueueHandle_t lcQueue)
     : m_lcQueue(lcQueue)
 {
     usb_serial_jtag_driver_config_t usb_config = {

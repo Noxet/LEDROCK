@@ -136,6 +136,12 @@ void LedController::run()
 }
 
 
+QueueHandle_t LedController::getQueue()
+{
+    return m_queue;
+}
+
+
 bool LedController::setStaticColor(const Color &color)
 {
     // printf("[%lld] set static\n", getUptime());
