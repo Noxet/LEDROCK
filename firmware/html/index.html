@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<title>Ledrock Control</title>
+<style>
+    body { font-family: monospace; background:#111; color:#0f0; margin:0; padding:15px; }
+    h2 { margin-top:0; }
+    #log {
+        white-space: pre-wrap;
+        background:#000;
+        padding:10px;
+        border:1px solid #333;
+        height: 60vh;
+        overflow-y: scroll;
+    }
+    #controls {
+        background:#000;
+        padding:10px;
+        border:1px solid #333;
+        margin-bottom:15px;
+    }
+    label { display:block; margin:5px 0 3px; }
+    select, input[type=color] {
+        background:#111; color:#0f0; border:1px solid #333; padding:4px;
+    }
+</style>
+</head>
+
+<body>
+<h2>Ledrock Control Panel</h2>
+
+<div id="controls">
+    <label for="mode">Color Mode:</label>
+    <select id="mode">
+        <option value="static">Static</option>
+        <option value="fade">Fading</option>
+        <option value="pulse">Pulsating</option>
+    </select>
+
+    <div id="color1-container">
+        <label>Color 1:</label>
+        <input type="color" id="color1" value="#ff0000">
+    </div>
+
+    <div id="color2-container" style="display:none;">
+        <label>Color 2:</label>
+        <input type="color" id="color2" value="#0000ff">
+    </div>
+
+    <button id="apply" style="margin-top:10px;">Apply</button>
+</div>
+
+<h2>Logs</h2>
+<div id="log"></div>
+
+<script>
+let logDiv = document.getElementById("log");
+let modeSel = document.getElementById("mode");
+let color1 = document.getElementById("color1");
+let color2 = document.getElementById("color2");
+let color2Container = document.getElementById("color2-container");
+let applyBtn = document.getElementById("apply");
+
+let ws = new WebSocket('ws://192.168.1.78/ws');
+
+ws.onmessage = (event) => {
+    logDiv.textContent += event.data + "\n";
+    logDiv.scrollTop = logDiv.scrollHeight;
+};
+
+ws.onopen = () => logDiv.textContent += "[WS] Connected\n";
+ws.onclose = () => logDiv.textContent += "[WS] Disconnected\n";
+
+/* Show/hide color2 depending on mode */
+modeSel.addEventListener("change", () => {
+    if (modeSel.value === "static") {
+        color2Container.style.display = "none";
+    } else {
+        color2Container.style.display = "block";
+    }
+});
+
+/* Apply button sends JSON command to ESP */
+applyBtn.onclick = () => {
+    let msg = {
+        type: "set_mode",
+        mode: modeSel.value,
+        color1: color1.value,
+        color2: color2.value
+    };
+    ws.send(JSON.stringify(msg));
+    logDiv.textContent += `[UI] Sent: ${JSON.stringify(msg)}\n`;
+    logDiv.scrollTop = logDiv.scrollHeight;
+};
+</script>
+</body>
+</html>
