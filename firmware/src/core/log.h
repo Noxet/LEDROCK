@@ -4,7 +4,7 @@
 #include "freertos/idf_additions.h"
 
 
-#define LRLOG_TAG __FILE__
+#define LRLOG_TAG __func__
 
 class LRLog
 {

@@ -34,11 +34,12 @@ void LRLog::log(esp_log_level_t level, const char *tag, const char *fmt, ...)
 
 	va_list ap;
 	va_start(ap, fmt);
-	int len = vsnprintf(msg, sizeof(msg), fmt, ap);
+	int len = snprintf(msg, sizeof(msg), "[%s] ", tag);
+	len += vsnprintf(msg + len, sizeof(msg) - len, fmt, ap);
 	va_end(ap);
 
 	if (!len) return;
-	// if test got truncated, adjust len accordingly
+	// if text got truncated, adjust len accordingly
 	if (len >= sizeof(msg)) len = sizeof(msg) - 1;
 
 	esp_log_write(level, tag, "%s\n", msg);

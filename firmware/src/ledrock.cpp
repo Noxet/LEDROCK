@@ -30,7 +30,7 @@ extern "C" void app_main(void)
 
     UartCLI cli{lc.getQueue()};
 
-    HTTPServer httpServer{lc.getQueue()}; // TODO(noxet): refactor to call getQueue instead
+    HTTPServer httpServer{lc.getQueue()};
     xTaskCreate(&HTTPServer::httpServerTask, "http task", 4096, &httpServer, 5, nullptr);
 
     LRLog::instance().init(httpServer.getQueue());

@@ -89,7 +89,9 @@ applyBtn.onclick = () => {
         color1: color1.value,
         color2: color2.value
     };
-    ws.send(JSON.stringify(msg));
+    <!-- ws.send(JSON.stringify(msg)); -->
+    let msg2 = modeSel.value + ":" + color1.value + ":" + color2.value;
+    ws.send(msg2);
     logDiv.textContent += `[UI] Sent: ${JSON.stringify(msg)}\n`;
     logDiv.scrollTop = logDiv.scrollHeight;
 };

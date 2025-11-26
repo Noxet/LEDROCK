@@ -15,7 +15,17 @@ Color::Color(RGB rgb) : rgb(rgb)
 
 Color::Color(const std::string &hexCode)
 {
-    rgb.r = 4 * std::stoul(hexCode.substr(0, 2), nullptr, 16);
-    rgb.g = 4 * std::stoul(hexCode.substr(2, 2), nullptr, 16);
-    rgb.b = 4 * std::stoul(hexCode.substr(4, 2), nullptr, 16);
+    std::string hex = hexCode;
+    if (hexCode.at(0) == '#') hex = hex.substr(1);
+    rgb.r = std::stoul(hex.substr(0, 2), nullptr, 16);
+    rgb.g = std::stoul(hex.substr(2, 2), nullptr, 16);
+    rgb.b = std::stoul(hex.substr(4, 2), nullptr, 16);
+}
+
+
+std::string Color::toString(RGB rgb)
+{
+    char buf[32];
+    snprintf(buf, sizeof(buf), "%02x%02x%02x", rgb.r, rgb.g, rgb.b);
+    return std::string(buf);
 }

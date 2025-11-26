@@ -1,4 +1,6 @@
 #include "http_server.h"
+#include "freertos/projdefs.h"
+#include "message.h"
 
 #include <esp_wifi.h>
 #include <esp_event.h>
@@ -24,6 +26,8 @@ static void disconnect_handler(void* arg, esp_event_base_t event_base, int32_t e
 static void connect_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
 static esp_err_t startPageHandler(httpd_req_t *req);
 static esp_err_t ws_handler(httpd_req_t *req);
+static std::vector<std::string> splitPayload(char *msg);
+static MsgType parseMsgType(std::string &s);
 
 
 // Embedded zipped html file
@@ -102,6 +106,7 @@ void HTTPServer::run()
 
         for (auto it = g_clients.begin(); it != g_clients.end();)
         {
+            // TODO(noxet): Send sync instead?
             int ret = httpd_ws_send_frame_async(m_server, it->fd, &ws_pkt);
             if (ret != ESP_OK)
             {
@@ -136,13 +141,19 @@ QueueHandle_t HTTPServer::getQueue()
 }
 
 
+bool HTTPServer::queueLCEvent(Event &e)
+{
+    return xQueueSend(m_lcQueue, &e, 10);
+}
+
+
 void HTTPServer::startWebserver(void)
 {
     const httpd_uri_t ws = {
         .uri        = "/ws",
         .method     = HTTP_GET,
         .handler    = ws_handler,
-        .user_ctx   = NULL,
+        .user_ctx   = this,
         .is_websocket = true,
         .handle_ws_control_frames = false,
         .supported_subprotocol = nullptr,
@@ -278,6 +289,8 @@ static esp_err_t startPageHandler(httpd_req_t *req)
  */
 static esp_err_t ws_handler(httpd_req_t *req)
 {
+    HTTPServer *httpServer = static_cast<HTTPServer *>(req->user_ctx);
+
     if (req->method == HTTP_GET) {
         int client_fd = httpd_req_to_sockfd(req);
         g_clients.push_back({.fd = client_fd, .failedAttempts = 0});
@@ -295,7 +308,7 @@ static esp_err_t ws_handler(httpd_req_t *req)
         ESP_LOGE(TAG, "httpd_ws_recv_frame failed to get frame len with %d", ret);
         return ret;
     }
-    ESP_LOGI(TAG, "frame len is %d", ws_pkt.len);
+
     if (ws_pkt.len) {
         /* ws_pkt.len + 1 is for NULL termination as we are expecting a string */
         buf = static_cast<uint8_t *>(calloc(1, ws_pkt.len + 1));
@@ -312,8 +325,45 @@ static esp_err_t ws_handler(httpd_req_t *req)
             return ret;
         }
         ESP_LOGI(TAG, "Got packet with message: %s", ws_pkt.payload);
+
+        // parsing colors and mode
+        // format: <MODE>:<COLOR>:?<COLOR>:?<TIME>
+        std::vector<std::string> tokens = splitPayload((char *) ws_pkt.payload);
+        if (tokens.size() < 2)
+        {
+            LRLOGI("Not enough arguments");
+        };
+        Event ev;
+        ev.type = parseMsgType(tokens.at(0));
+        switch (ev.type)
+        {
+            case MsgType::STATIC:
+                LRLOGI("Got raw color string: %s", tokens.at(1).c_str());
+                ev.data.staticColor.color = Color(tokens.at(1)).rgb;
+                LRLOGI("Got static color: %s", Color::toString(ev.data.staticColor.color).c_str());
+                break;
+            case MsgType::FADE:
+                if (tokens.size() < 4)
+                {
+                    LRLOGI("Not enough arguments for fade color");
+                    return ESP_OK;
+                }
+                ev.data.fadeColor.from = Color(tokens.at(2)).rgb;
+                ev.data.fadeColor.to = Color(tokens.at(3)).rgb;
+                ev.data.fadeColor.time = std::stoul(tokens.at(4));
+                break;
+            case MsgType::PULSE:
+                break;
+            case MsgType::NONE:
+                break;
+        }
+
+        if (httpServer->queueLCEvent(ev) != pdPASS)
+        {
+            LRLOGI("Failed to queue LC event");
+        }
     }
-    ESP_LOGI(TAG, "Packet type: %d", ws_pkt.type);
+
     if (ws_pkt.type == HTTPD_WS_TYPE_TEXT &&
         strcmp((char*)ws_pkt.payload,"Trigger async") == 0) {
         free(buf);
@@ -329,7 +379,30 @@ static esp_err_t ws_handler(httpd_req_t *req)
 }
 
 
+static MsgType parseMsgType(std::string &s)
+{
+    if (s == "static") return MsgType::STATIC;
+    if (s == "fade") return MsgType::FADE;
+    if (s == "pulse") return MsgType::PULSE;
+    return MsgType::NONE;
+}
 
+
+static std::vector<std::string> splitPayload(char *msg)
+{
+    std::string payload = msg;
+    std::vector<std::string> tokens;
+    size_t pos = 0;
+    while ((pos = payload.find(":")) != std::string::npos)
+    {
+        std::string token = payload.substr(0, pos);
+        tokens.push_back(token);
+        payload.erase(0, pos + 1); // erase up to, including, the delimiter
+    }
+    tokens.push_back(payload);
+
+    return tokens;
+}
 
 
 static void disconnect_handler(void* arg, esp_event_base_t event_base,

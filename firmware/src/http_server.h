@@ -1,5 +1,7 @@
 #pragma once
 
+#include "message.h"
+
 #include "esp_http_server.h"
 #include "freertos/idf_additions.h"
 
@@ -12,6 +14,7 @@ public:
 
 	void startWebserver();
 	void stopWebserver();
+	bool queueLCEvent(Event &e);
 	httpd_handle_t getServer();
 	QueueHandle_t getQueue();
 

@@ -18,4 +18,6 @@ struct Color
     Color(const std::string &hexCode);
 
     RGB rgb;
+
+    static std::string toString(RGB rgb);
 };
