@@ -62,7 +62,7 @@ let color2 = document.getElementById("color2");
 let color2Container = document.getElementById("color2-container");
 let applyBtn = document.getElementById("apply");
 
-let ws = new WebSocket('ws://192.168.1.78/ws');
+let ws = new WebSocket('ws://192.168.1.50/ws');
 
 ws.onmessage = (event) => {
     logDiv.textContent += event.data + "\n";
@@ -90,7 +90,7 @@ applyBtn.onclick = () => {
         color2: color2.value
     };
     <!-- ws.send(JSON.stringify(msg)); -->
-    let msg2 = modeSel.value + ":" + color1.value + ":" + color2.value;
+    let msg2 = modeSel.value + ":" + color1.value + ":" + color2.value + ":3000";
     ws.send(msg2);
     logDiv.textContent += `[UI] Sent: ${JSON.stringify(msg)}\n`;
     logDiv.scrollTop = logDiv.scrollHeight;

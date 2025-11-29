@@ -333,14 +333,14 @@ static esp_err_t ws_handler(httpd_req_t *req)
         {
             LRLOGI("Not enough arguments");
         };
+
+        // Parse the raw data and turn it into an event for the LED controller
         Event ev;
         ev.type = parseMsgType(tokens.at(0));
         switch (ev.type)
         {
             case MsgType::STATIC:
-                LRLOGI("Got raw color string: %s", tokens.at(1).c_str());
                 ev.data.staticColor.color = Color(tokens.at(1)).rgb;
-                LRLOGI("Got static color: %s", Color::toString(ev.data.staticColor.color).c_str());
                 break;
             case MsgType::FADE:
                 if (tokens.size() < 4)
@@ -348,13 +348,22 @@ static esp_err_t ws_handler(httpd_req_t *req)
                     LRLOGI("Not enough arguments for fade color");
                     return ESP_OK;
                 }
-                ev.data.fadeColor.from = Color(tokens.at(2)).rgb;
-                ev.data.fadeColor.to = Color(tokens.at(3)).rgb;
-                ev.data.fadeColor.time = std::stoul(tokens.at(4));
+                ev.data.fadeColor.from = Color(tokens.at(1)).rgb;
+                ev.data.fadeColor.to = Color(tokens.at(2)).rgb;
+                ev.data.fadeColor.time = std::stoul(tokens.at(3));
                 break;
             case MsgType::PULSE:
+                if (tokens.size() < 4)
+                {
+                    LRLOGI("Not enough arguments for pulse color");
+                    return ESP_OK;
+                }
+                ev.data.fadeColor.from = Color(tokens.at(1)).rgb;
+                ev.data.fadeColor.to = Color(tokens.at(2)).rgb;
+                ev.data.fadeColor.time = std::stoul(tokens.at(3));
                 break;
             case MsgType::NONE:
+                LRLOGI("NONE type found");
                 break;
         }
 
