@@ -64,9 +64,9 @@ bool serialWrite(HANDLE handle, const uint8_t *data, int len)
 {
 	DWORD written;
 	uint8_t msg[5];
-	msg[0] = 0x01; // static color
-	memcpy(&msg[1], data, 3);
-	msg[4] = '\n';
+	msg[0] = 0x04;
+	msg[1] = 0x01; // static color
+	memcpy(&msg[2], data, 3);
 	// clean any leftover data in the software buffer. The latest data is more important
 	PurgeComm(handle, PURGE_TXCLEAR);
 	FlushFileBuffers(handle);
@@ -222,7 +222,7 @@ int main()
 			serialWrite(serial, pkt, sizeof(pkt));
 
 			ctx->Unmap(staging.Get(), 0);
-			Sleep(20);
+			Sleep(10);
 		}
 
 		dup->ReleaseFrame();

@@ -70,3 +70,8 @@ __Previews/
 #zig
 zig-out/
 .zig-cache/
+
+# CLion
+.idea/
+cmake-*/
+.clang-format
