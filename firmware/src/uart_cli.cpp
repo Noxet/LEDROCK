@@ -8,6 +8,7 @@
 #include "esp_intr_alloc.h"
 #include "freertos/idf_additions.h"
 #include "freertos/projdefs.h"
+#include "portmacro.h"
 
 #include <cstring>
 
@@ -20,7 +21,7 @@ UartCLI::UartCLI(QueueHandle_t lcQueue)
 {
     usb_serial_jtag_driver_config_t usb_config = {
         .tx_buffer_size = 1024,
-        .rx_buffer_size = 1024,
+        .rx_buffer_size = 128,
     };
 
     ESP_ERROR_CHECK(usb_serial_jtag_driver_install(&usb_config));
@@ -46,6 +47,8 @@ void UartCLI::parse()
     logPacket();
     // TODO: log failed posts to queue
     // if (m_bufferPos < 3) return;
+    // discard the size byte
+    read_u8_le();
     MsgType type = static_cast<MsgType>(read_u8_le());
     Event e;
     e.type = type;
@@ -75,6 +78,7 @@ void UartCLI::parse()
             break;
     }
 
+    ESP_LOGW(TAG, "LC queue utilization: %u/%u", uxQueueMessagesWaiting(m_lcQueue), uxQueueSpacesAvailable(m_lcQueue));
     if (xQueueSend(m_lcQueue, &e, 10) != pdPASS)
     {
         ESP_LOGW(TAG, "Failed to post to queue");
@@ -88,7 +92,23 @@ void UartCLI::poll()
     // Wait for main thread to parse the latest data
     // if (m_bufferToParse) return;
 
-    int len = usb_serial_jtag_read_bytes(&m_buffer[m_bufferDataSize], 1, 20 / portTICK_PERIOD_MS);
+    // The first byte indicates the number of bytes in the packet (minus the first byte)
+    uint8_t dataLen = 0;
+    int len = usb_serial_jtag_read_bytes(&dataLen, 1, 20 / portTICK_PERIOD_MS);
+    if (!len) return;
+    m_buffer[0] = dataLen;
+    int bytesRead = 0;
+    while (bytesRead < dataLen)
+    {
+        bytesRead += usb_serial_jtag_read_bytes(&m_buffer[bytesRead + 1], dataLen - bytesRead, 20 / portTICK_PERIOD_MS);
+    }
+
+    m_bufferDataSize = bytesRead + 1;
+    parse();
+    memset(m_buffer, '\0', sizeof(m_buffer));
+    m_bufferReadPos = m_buffer;
+    /*
+    int len = usb_serial_jtag_read_bytes(&m_buffer[m_bufferDataSize], 1, 10 / portTICK_PERIOD_MS);
     m_bufferDataSize += len;
     if (isLineEnding(m_buffer[m_bufferDataSize - 1]))
     {
@@ -99,6 +119,7 @@ void UartCLI::poll()
         m_bufferReadPos = m_buffer;
         m_bufferToParse = true;
     }
+    */
 
 }
 

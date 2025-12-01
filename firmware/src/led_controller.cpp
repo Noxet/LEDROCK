@@ -73,8 +73,8 @@ void LedController::run()
                     case MsgType::STATIC:
                         if (setStaticColor(ev.data.staticColor.color))
                         {
-                            const auto &c = ev.data.staticColor.color;
-                            LRLOGI("Static color set: %s", Color::toString(c).c_str());
+                            // const auto &c = ev.data.staticColor.color;
+                            // LRLOGI("Static color set: %s", Color::toString(c).c_str());
                             ESP_LOGI(TAG, "Set staticcolor done");
                             current.reset();
                         }
@@ -98,6 +98,8 @@ void LedController::run()
                         break;
 
                     case MsgType::NONE:
+                    default:
+                        current.reset();
                         break;
                 }
             } break;
