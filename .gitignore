@@ -62,6 +62,8 @@ dkms.conf
 
 History/
 __Previews/
+Project\ Logs*
+Project\ Outputs*
 
 # Other
 .cache/
