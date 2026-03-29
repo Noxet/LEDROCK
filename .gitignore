@@ -64,6 +64,7 @@ History/
 __Previews/
 Project\ Logs*
 Project\ Outputs*
+*.zip
 
 # Other
 .cache/

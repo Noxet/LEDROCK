@@ -1,0 +1,13 @@
+Output: NC Drill Files
+Type  : NC Drill
+From  : PCB Document [Ledrock.PcbDoc]
+   Generated File[Ledrock-Plated.TXT]
+   Generated File[Ledrock-NonPlated.TXT]
+   Generated File[Ledrock.LDP]
+   Generated File[Ledrock.DRR]
+
+
+Files Generated   : 4
+Documents Printed : 0
+
+Finished Output Generation At 16:27:15 On 2026-03-29

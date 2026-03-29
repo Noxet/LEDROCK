@@ -117,6 +117,156 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=FDESJPFS
 
+[Document5]
+DocumentPath=Job.OutJob
+AnnotationEnabled=1
+AnnotateStartValue=1
+AnnotationIndexControlEnabled=0
+AnnotateSuffix=
+AnnotateScope=All
+AnnotateOrder=-1
+DoLibraryUpdate=1
+DoDatabaseUpdate=1
+ClassGenCCAutoEnabled=1
+ClassGenCCAutoRoomEnabled=0
+ClassGenNCAutoScope=None
+DItemRevisionGUID=
+GenerateClassCluster=0
+DocumentUniqueId=
+
+[Document6]
+DocumentPath=Ledrock.BomDoc
+AnnotationEnabled=1
+AnnotateStartValue=1
+AnnotationIndexControlEnabled=0
+AnnotateSuffix=
+AnnotateScope=All
+AnnotateOrder=-1
+DoLibraryUpdate=1
+DoDatabaseUpdate=1
+ClassGenCCAutoEnabled=1
+ClassGenCCAutoRoomEnabled=0
+ClassGenNCAutoScope=None
+DItemRevisionGUID=
+GenerateClassCluster=0
+DocumentUniqueId=
+
+[GeneratedDocument1]
+DocumentPath=Project Outputs for Ledrock\Design Rule Check - Ledrock.html
+DItemRevisionGUID=
+
+[GeneratedDocument2]
+DocumentPath=Manufacturing\NC Drill\Ledrock-NonPlated.TXT
+DItemRevisionGUID=
+
+[GeneratedDocument3]
+DocumentPath=Project Outputs for Free Documents\Ledrock-NonPlated.TXT
+DItemRevisionGUID=
+
+[GeneratedDocument4]
+DocumentPath=Manufacturing\NC Drill\Ledrock-Plated.TXT
+DItemRevisionGUID=
+
+[GeneratedDocument5]
+DocumentPath=Project Outputs for Free Documents\Ledrock-Plated.TXT
+DItemRevisionGUID=
+
+[GeneratedDocument6]
+DocumentPath=Manufacturing\NC Drill\Ledrock.DRR
+DItemRevisionGUID=
+
+[GeneratedDocument7]
+DocumentPath=Project Outputs for Free Documents\Ledrock.DRR
+DItemRevisionGUID=
+
+[GeneratedDocument8]
+DocumentPath=Manufacturing\Gerber\Ledrock.EXTREP
+DItemRevisionGUID=
+
+[GeneratedDocument9]
+DocumentPath=Project Outputs for Free Documents\Ledrock.EXTREP
+DItemRevisionGUID=
+
+[GeneratedDocument10]
+DocumentPath=Manufacturing\Gerber\Ledrock.GBL
+DItemRevisionGUID=
+
+[GeneratedDocument11]
+DocumentPath=Project Outputs for Free Documents\Ledrock.GBL
+DItemRevisionGUID=
+
+[GeneratedDocument12]
+DocumentPath=Manufacturing\Gerber\Ledrock.GBO
+DItemRevisionGUID=
+
+[GeneratedDocument13]
+DocumentPath=Project Outputs for Free Documents\Ledrock.GBO
+DItemRevisionGUID=
+
+[GeneratedDocument14]
+DocumentPath=Manufacturing\Gerber\Ledrock.GBP
+DItemRevisionGUID=
+
+[GeneratedDocument15]
+DocumentPath=Project Outputs for Free Documents\Ledrock.GBP
+DItemRevisionGUID=
+
+[GeneratedDocument16]
+DocumentPath=Manufacturing\Gerber\Ledrock.GBS
+DItemRevisionGUID=
+
+[GeneratedDocument17]
+DocumentPath=Project Outputs for Free Documents\Ledrock.GBS
+DItemRevisionGUID=
+
+[GeneratedDocument18]
+DocumentPath=Manufacturing\Gerber\Ledrock.GM
+DItemRevisionGUID=
+
+[GeneratedDocument19]
+DocumentPath=Project Outputs for Free Documents\Ledrock.GM
+DItemRevisionGUID=
+
+[GeneratedDocument20]
+DocumentPath=Manufacturing\Gerber\Ledrock.GTL
+DItemRevisionGUID=
+
+[GeneratedDocument21]
+DocumentPath=Project Outputs for Free Documents\Ledrock.GTL
+DItemRevisionGUID=
+
+[GeneratedDocument22]
+DocumentPath=Manufacturing\Gerber\Ledrock.GTO
+DItemRevisionGUID=
+
+[GeneratedDocument23]
+DocumentPath=Project Outputs for Free Documents\Ledrock.GTO
+DItemRevisionGUID=
+
+[GeneratedDocument24]
+DocumentPath=Manufacturing\Gerber\Ledrock.GTP
+DItemRevisionGUID=
+
+[GeneratedDocument25]
+DocumentPath=Project Outputs for Free Documents\Ledrock.GTP
+DItemRevisionGUID=
+
+[GeneratedDocument26]
+DocumentPath=Manufacturing\Gerber\Ledrock.GTS
+DItemRevisionGUID=
+
+[GeneratedDocument27]
+DocumentPath=Project Outputs for Free Documents\Ledrock.GTS
+DItemRevisionGUID=
+
+[GeneratedDocument28]
+DocumentPath=Manufacturing\NC Drill\Ledrock.LDP
+DItemRevisionGUID=
+
+[GeneratedDocument29]
+DocumentPath=Manufacturing\Gerber\Ledrock.REP
+DItemRevisionGUID=
+
 [Parameter1]
 Name=Revision
 Value=1.0

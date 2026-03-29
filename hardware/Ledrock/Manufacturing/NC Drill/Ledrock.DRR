@@ -1,0 +1,20 @@
+----------------------------------------------------------------------------------------------------------------------------------
+NCDrill File Report For: Ledrock.PcbDoc   2026-03-29  16:27:15
+----------------------------------------------------------------------------------------------------------------------------------
+
+Layer Pair : Top Layer to Bottom Layer
+ASCII Plated RoundHoles File : Ledrock-Plated.TXT
+ASCII Non-Plated RoundHoles File : Ledrock-NonPlated.TXT
+
+Tool       Hole Size               Hole Tolerance               Hole Type       Hole Count   Plated         Tool Travel
+----------------------------------------------------------------------------------------------------------------------------------
+T1      12mil (0.3mm)                                             Round             9         PTH        2.32inch (58.80mm)
+T2      20mil (0.5mm)                                             Round             2         PTH        0.19inch (4.92mm)
+T3      32mil (0.8mm)                                             Round             9         PTH        1.09inch (27.60mm)
+T4      39mil (1mm)                                               Round             3         PTH        0.71inch (18.14mm)
+T5      51mil (1.3mm)                                             Round             6         PTH        1.26inch (32.11mm)
+T6      126mil (3.2mm)                                            Round             3         NPTH       2.77inch (70.43mm)
+----------------------------------------------------------------------------------------------------------------------------------
+Totals                                                                              32
+
+Total Processing Time (hh:mm:ss) : 00:00:00
