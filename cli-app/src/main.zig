@@ -53,44 +53,44 @@ pub fn main() !void {
                 checkArgs(args, 1);
                 const c = try parseColor(res.positionals[0][0]);
                 // if (res.positionals[0].len > 1) {}
-                data[0] = '\x01';
-                data[1] = c.r;
-                data[2] = c.g;
-                data[3] = c.b;
-                data[4] = '\n';
-                sendLen = 5;
+                data[0] = 4; // packet size (minus this byte)
+                data[1] = '\x01'; // type (eg static)
+                data[2] = c.r;
+                data[3] = c.g;
+                data[4] = c.b;
+                sendLen = data[0] + 1;
             },
             .fade => {
                 checkArgs(args, 3);
                 const cFrom = try parseColor(res.positionals[0][0]);
                 const cTo = try parseColor(res.positionals[0][1]);
                 const time = try parseTime(args[2]);
-                data[0] = '\x02';
-                data[1] = cFrom.r;
-                data[2] = cFrom.g;
-                data[3] = cFrom.b;
-                data[4] = cTo.r;
-                data[5] = cTo.g;
-                data[6] = cTo.b;
-                std.mem.writeInt(u32, data[7..][0..4], time, .little);
-                data[11] = '\n';
-                sendLen = 12;
+                data[0] = 11;
+                data[1] = '\x02';
+                data[2] = cFrom.r;
+                data[3] = cFrom.g;
+                data[4] = cFrom.b;
+                data[5] = cTo.r;
+                data[6] = cTo.g;
+                data[7] = cTo.b;
+                std.mem.writeInt(u32, data[8..][0..4], time, .little);
+                sendLen = data[0] + 1;
             },
             .pulse => {
                 checkArgs(args, 3);
                 const cFrom = try parseColor(res.positionals[0][0]);
                 const cTo = try parseColor(res.positionals[0][1]);
                 const time = try parseTime(args[2]);
-                data[0] = '\x03';
-                data[1] = cFrom.r;
-                data[2] = cFrom.g;
-                data[3] = cFrom.b;
-                data[4] = cTo.r;
-                data[5] = cTo.g;
-                data[6] = cTo.b;
-                std.mem.writeInt(u32, data[7..][0..4], time, .little);
-                data[11] = '\n';
-                sendLen = 12;
+                data[0] = 11;
+                data[1] = '\x03';
+                data[2] = cFrom.r;
+                data[3] = cFrom.g;
+                data[4] = cFrom.b;
+                data[5] = cTo.r;
+                data[6] = cTo.g;
+                data[7] = cTo.b;
+                std.mem.writeInt(u32, data[8..][0..4], time, .little);
+                sendLen = data[0] + 1;
             },
         }
     } else {
