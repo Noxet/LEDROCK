@@ -2,10 +2,8 @@
 FileName = Ledrock.GBR
 AutoAperture = True
 *************************************************************
-Generating : Bottom Paste
-      File : Ledrock.GBP
-
-    Adding Layer      : Bottom Paste
+Generating : Bottom Layer
+      File : Ledrock.GBL
 
     Adding Layer      : Bottom Layer
 
@@ -13,7 +11,15 @@ Generating : Bottom Paste
 
 
 Used DCodes :
+    D14
     D22
+    D46
+    D47
+    D48
+    D49
+    D50
+    D51
+    D52
 *************************************************************
 
 *************************************************************
@@ -41,6 +47,21 @@ Used DCodes :
 *************************************************************
 
 *************************************************************
+Generating : Top Overlay
+      File : Ledrock.GTO
+
+    Adding Layer      : Top Overlay
+
+
+Used DCodes :
+    D10
+    D11
+    D12
+    D13
+    D14
+*************************************************************
+
+*************************************************************
 Generating : Bottom Solder
       File : Ledrock.GBS
 
@@ -60,6 +81,69 @@ Used DCodes :
     D39
     D40
     D41
+*************************************************************
+
+*************************************************************
+Generating : Top Layer
+      File : Ledrock.GTL
+
+    Adding Layer      : Top Layer
+
+    Adding Layer      : Multi-Layer
+
+
+Used DCodes :
+    D10
+    D14
+    D15
+    D16
+    D17
+    D18
+    D19
+    D20
+    D21
+    D22
+    D23
+    D24
+    D42
+    D43
+    D44
+    D45
+    D46
+    D47
+    D48
+    D49
+    D50
+    D51
+    D52
+*************************************************************
+
+*************************************************************
+Generating : Bottom Paste
+      File : Ledrock.GBP
+
+    Adding Layer      : Bottom Paste
+
+    Adding Layer      : Bottom Layer
+
+    Adding Layer      : Multi-Layer
+
+
+Used DCodes :
+    D22
+*************************************************************
+
+*************************************************************
+Generating : Bottom Overlay
+      File : Ledrock.GBO
+
+    Adding Layer      : Bottom Overlay
+
+
+Used DCodes :
+    D11
+    D12
+    D13
 *************************************************************
 
 *************************************************************
@@ -91,90 +175,6 @@ Used DCodes :
     D39
     D40
     D41
-*************************************************************
-
-*************************************************************
-Generating : Bottom Overlay
-      File : Ledrock.GBO
-
-    Adding Layer      : Bottom Overlay
-
-
-Used DCodes :
-    D10
-    D12
-    D13
-*************************************************************
-
-*************************************************************
-Generating : Top Overlay
-      File : Ledrock.GTO
-
-    Adding Layer      : Top Overlay
-
-
-Used DCodes :
-    D10
-    D11
-    D12
-    D13
-    D14
-*************************************************************
-
-*************************************************************
-Generating : Bottom Layer
-      File : Ledrock.GBL
-
-    Adding Layer      : Bottom Layer
-
-    Adding Layer      : Multi-Layer
-
-
-Used DCodes :
-    D14
-    D22
-    D46
-    D47
-    D48
-    D49
-    D50
-    D51
-    D52
-*************************************************************
-
-*************************************************************
-Generating : Top Layer
-      File : Ledrock.GTL
-
-    Adding Layer      : Top Layer
-
-    Adding Layer      : Multi-Layer
-
-
-Used DCodes :
-    D11
-    D14
-    D15
-    D16
-    D17
-    D18
-    D19
-    D20
-    D21
-    D22
-    D23
-    D24
-    D42
-    D43
-    D44
-    D45
-    D46
-    D47
-    D48
-    D49
-    D50
-    D51
-    D52
 *************************************************************
 
 *************************************************************
